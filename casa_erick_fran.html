@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Casa E&F">
+<meta name="theme-color" content="#0f0f0f">
+<title>Casa Erick & Fran</title>
+
+<style>
+:root {
+  --bg: #0f0f0f;
+  --bg2: #1a1a1a;
+  --bg3: #242424;
+  --border: rgba(255,255,255,0.08);
+  --border2: rgba(255,255,255,0.14);
+  --text: #f0f0f0;
+  --text2: #909090;
+  --text3: #606060;
+  --accent: #4f9ef8;
+  --accent2: #7b6ef6;
+  --green: #34c759;
+  --red: #ff453a;
+  --amber: #ffd60a;
+  --radius: 14px;
+  --radius-sm: 9px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  min-height: -webkit-fill-available;
+  overscroll-behavior: none;
+}
+
+/* HEADER */
+.header {
+  position: sticky; top: 0; z-index: 50;
+  background: rgba(15,15,15,0.88);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  border-bottom: 0.5px solid var(--border);
+  padding: env(safe-area-inset-top, 0px) 0 0;
+}
+.header-inner {
+  padding: 12px 16px 10px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.header-title { font-size: 17px; font-weight: 600; letter-spacing: -0.3px; }
+.header-sub { font-size: 11px; color: var(--text2); margin-top: 1px; }
+.avatars { display: flex; gap: 6px; }
+.av { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600; }
+.av-e { background: rgba(79,158,248,0.2); color: #4f9ef8; }
+.av-f { background: rgba(123,110,246,0.2); color: #7b6ef6; }
+
+/* MONTH NAV */
+.month-nav {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 16px 12px;
+}
+.month-label { flex: 1; text-align: center; font-size: 15px; font-weight: 600; letter-spacing: -0.2px; }
+.nav-btn {
+  background: var(--bg3); border: none; border-radius: 10px;
+  width: 32px; height: 32px; color: var(--text2); font-size: 18px;
+  display: flex; align-items: center; justify-content: center; cursor: pointer;
+  transition: background 0.15s;
+}
+.nav-btn:active { background: var(--border2); }
+
+/* SUMMARY CARDS */
+.summary { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 0 16px 16px; }
+.metric {
+  background: var(--bg2); border-radius: var(--radius);
+  border: 0.5px solid var(--border); padding: 14px;
+}
+.metric-label { font-size: 10px; color: var(--text2); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 5px; }
+.metric-val { font-size: 20px; font-weight: 700; letter-spacing: -0.5px; }
+.metric-val.accent { color: var(--accent); }
+.metric-sub { font-size: 10px; color: var(--text3); margin-top: 3px; }
+.pill { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 99px; font-size: 10px; font-weight: 600; }
+.pill-up { background: rgba(52,199,89,0.15); color: var(--green); }
+.pill-down { background: rgba(255,69,58,0.15); color: var(--red); }
+
+/* TABS */
+.tabs {
+  display: flex; border-bottom: 0.5px solid var(--border);
+  padding: 0 16px; overflow-x: auto; gap: 0;
+  scrollbar-width: none;
+}
+.tabs::-webkit-scrollbar { display: none; }
+.tab {
+  flex-shrink: 0; padding: 10px 14px; font-size: 13px; color: var(--text2);
+  background: none; border: none; cursor: pointer;
+  border-bottom: 2px solid transparent; transition: color 0.15s, border-color 0.15s;
+  white-space: nowrap; font-weight: 500;
+}
+.tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+/* CONTENT */
+.content { padding: 16px; padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 20px); }
+.tab-pane { display: none; }
+.tab-pane.active { display: block; }
+
+/* SECTION */
+.section-label {
+  font-size: 11px; color: var(--text2); font-weight: 600;
+  letter-spacing: 0.06em; text-transform: uppercase;
+  margin-bottom: 8px; margin-top: 16px;
+}
+.section-label:first-child { margin-top: 0; }
+
+/* CARDS */
+.card {
+  background: var(--bg2); border-radius: var(--radius);
+  border: 0.5px solid var(--border); overflow: hidden; margin-bottom: 10px;
+}
+.cat-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 11px 14px; border-bottom: 0.5px solid var(--border);
+  transition: background 0.1s;
+}
+.cat-row:last-child { border-bottom: none; }
+.cat-row:active { background: var(--bg3); }
+.cat-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.cat-info { flex: 1; min-width: 0; }
+.cat-name { font-size: 13px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cat-note { font-size: 10px; color: var(--text3); margin-top: 1px; }
+.cat-bar-wrap { width: 50px; height: 3px; background: var(--bg3); border-radius: 2px; overflow: hidden; flex-shrink: 0; }
+.cat-bar { height: 100%; border-radius: 2px; }
+.cat-amount { font-size: 13px; font-weight: 600; min-width: 72px; text-align: right; flex-shrink: 0; }
+.row-actions { display: flex; gap: 4px; flex-shrink: 0; }
+.btn-xs {
+  background: var(--bg3); border: none; border-radius: 6px;
+  padding: 4px 7px; font-size: 10px; color: var(--text2); cursor: pointer;
+}
+.btn-xs:active { opacity: 0.7; }
+.btn-xs.danger { color: var(--red); background: rgba(255,69,58,0.1); }
+
+/* EDIT ROW inline */
+.edit-row {
+  padding: 10px 14px; border-bottom: 0.5px solid var(--border);
+  background: var(--bg3);
+}
+.edit-row:last-child { border-bottom: none; }
+.edit-row-label { font-size: 11px; color: var(--text2); margin-bottom: 8px; font-weight: 500; }
+.edit-fields { display: flex; flex-direction: column; gap: 6px; }
+.edit-row-actions { display: flex; gap: 6px; margin-top: 8px; }
+
+/* INPUTS */
+input, select, textarea {
+  width: 100%; background: var(--bg); color: var(--text);
+  border: 0.5px solid var(--border2); border-radius: var(--radius-sm);
+  padding: 9px 12px; font-size: 13px; font-family: inherit;
+  outline: none; -webkit-appearance: none; appearance: none;
+}
+input:focus, select:focus { border-color: var(--accent); }
+select { background-image: none; }
+input[type=color] {
+  padding: 4px; height: 36px; cursor: pointer;
+}
+.input-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+/* BUTTONS */
+.btn {
+  padding: 10px 14px; border-radius: var(--radius-sm); font-size: 13px;
+  font-weight: 600; border: none; cursor: pointer; transition: opacity 0.15s;
+  text-align: center; font-family: inherit;
+}
+.btn:active { opacity: 0.75; }
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-secondary { background: var(--bg3); color: var(--text2); border: 0.5px solid var(--border2); }
+.btn-ghost { background: none; color: var(--text2); border: 0.5px solid var(--border); }
+.btn-full { width: 100%; }
+.btn-danger { background: rgba(255,69,58,0.15); color: var(--red); }
+
+/* ADD FORM */
+.add-form {
+  background: var(--bg3); border-radius: var(--radius-sm);
+  border: 0.5px solid var(--border); padding: 14px;
+  margin-top: 8px; display: none;
+}
+.add-form.open { display: block; }
+.form-title { font-size: 12px; font-weight: 600; color: var(--text2); margin-bottom: 10px; letter-spacing: 0.03em; }
+.form-gap { display: flex; flex-direction: column; gap: 8px; }
+
+/* SPLIT */
+.split-person { display: flex; align-items: center; gap: 12px; padding: 14px; border-bottom: 0.5px solid var(--border); }
+.split-person:last-of-type { border-bottom: none; }
+.split-av { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; }
+.split-info { flex: 1; }
+.split-name { font-size: 14px; font-weight: 600; }
+.split-sub { font-size: 11px; color: var(--text2); margin-top: 2px; }
+.split-amount { font-size: 20px; font-weight: 700; }
+
+/* TREND */
+.chart-wrap { position: relative; height: 190px; margin-bottom: 12px; }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 10px; }
+.legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text2); }
+.legend-dot { width: 12px; height: 3px; border-radius: 2px; }
+.year-row { display: flex; align-items: center; padding: 9px 0; border-bottom: 0.5px solid var(--border); }
+.year-row:last-child { border-bottom: none; }
+
+/* EXPORT */
+.export-preview {
+  background: var(--bg3); border-radius: var(--radius-sm);
+  padding: 12px; font-size: 11px; color: var(--text);
+  white-space: pre-wrap; line-height: 1.7; margin-bottom: 10px;
+  max-height: 220px; overflow-y: auto; font-family: 'SF Mono', monospace;
+  border: 0.5px solid var(--border);
+}
+.export-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+
+/* ALL MONTHS TABLE */
+.months-table { width: 100%; border-collapse: collapse; }
+.months-table th { font-size: 10px; color: var(--text2); font-weight: 600; text-align: left; padding: 5px 0; border-bottom: 0.5px solid var(--border); text-transform: uppercase; letter-spacing: 0.04em; }
+.months-table th:not(:first-child) { text-align: right; }
+.months-table td { font-size: 12px; padding: 7px 0; border-bottom: 0.5px solid var(--border); }
+.months-table td:not(:first-child) { text-align: right; }
+.months-table tr:last-child td { border-bottom: none; }
+.cur-month { background: rgba(79,158,248,0.06); }
+
+/* INSTALL BANNER */
+.install-banner {
+  background: linear-gradient(135deg, rgba(79,158,248,0.12), rgba(123,110,246,0.12));
+  border: 0.5px solid rgba(79,158,248,0.25);
+  border-radius: var(--radius); padding: 14px; margin-bottom: 14px;
+  display: none;
+}
+.install-banner.show { display: block; }
+.install-title { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+.install-steps { font-size: 11px; color: var(--text2); line-height: 1.7; }
+
+/* TOAST */
+.toast {
+  position: fixed; bottom: calc(env(safe-area-inset-bottom,0px) + 24px);
+  left: 50%; transform: translateX(-50%) translateY(10px);
+  background: rgba(30,30,30,0.96); backdrop-filter: blur(20px);
+  color: var(--text); padding: 10px 20px; border-radius: 99px;
+  font-size: 13px; font-weight: 500; opacity: 0; transition: all 0.25s;
+  pointer-events: none; white-space: nowrap; z-index: 999;
+  border: 0.5px solid var(--border2);
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* MODAL */
+.modal-overlay {
+  display: none; position: fixed; inset: 0; z-index: 100;
+  background: rgba(0,0,0,0.6); backdrop-filter: blur(6px);
+  align-items: flex-end; justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: var(--bg2); border-radius: 20px 20px 0 0;
+  border-top: 0.5px solid var(--border2);
+  padding: 20px 20px calc(env(safe-area-inset-bottom,0px) + 20px);
+  width: 100%; max-width: 420px;
+}
+.modal-handle { width: 36px; height: 4px; background: var(--border2); border-radius: 2px; margin: 0 auto 16px; }
+.modal-title { font-size: 16px; font-weight: 700; margin-bottom: 14px; }
+.modal-fields { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+.modal-label { font-size: 11px; color: var(--text2); margin-bottom: 4px; font-weight: 500; }
+.modal-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-inner">
+    <div>
+      <div class="header-title">Casa Erick & Fran 🏠</div>
+      <div class="header-sub" id="saveBadge">Cargando...</div>
+    </div>
+    <div class="avatars">
+      <div class="av av-e">ER</div>
+      <div class="av av-f">FR</div>
+    </div>
+  </div>
+  <div class="month-nav">
+    <button class="nav-btn" onclick="chM(-1)">‹</button>
+    <span class="month-label" id="mLabel">—</span>
+    <button class="nav-btn" onclick="chM(1)">›</button>
+  </div>
+</div>
+
+<!-- SUMMARY -->
+<div class="summary">
+  <div class="metric">
+    <div class="metric-label">Total mes</div>
+    <div class="metric-val accent" id="mTotal">—</div>
+    <div class="metric-sub" id="mDiff"></div>
+  </div>
+  <div class="metric">
+    <div class="metric-label">Cada uno paga</div>
+    <div class="metric-val" id="mCada">—</div>
+    <div class="metric-sub">50% / 50%</div>
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+  <button class="tab active" onclick="showTab('detalle',this)">Detalle</button>
+  <button class="tab" onclick="showTab('split',this)">División</button>
+  <button class="tab" onclick="showTab('tendencia',this)">Tendencia</button>
+  <button class="tab" onclick="showTab('exportar',this)">Exportar</button>
+  <button class="tab" onclick="showTab('ajustes',this)">Ajustes</button>
+</div>
+
+<!-- CONTENT -->
+<div class="content">
+
+  <!-- DETALLE -->
+  <div id="tab-detalle" class="tab-pane active">
+    <div class="section-label">Gastos del mes</div>
+    <div class="card" id="catList"></div>
+    <div class="section-label">Gastos variables</div>
+    <div class="card" id="varList"></div>
+    <button class="btn btn-ghost btn-full" onclick="toggleForm('addVarForm')" style="margin-top:6px;">+ Agregar gasto variable</button>
+    <div class="add-form" id="addVarForm">
+      <div class="form-title">NUEVO GASTO VARIABLE</div>
+      <div class="form-gap">
+        <div><div class="modal-label">Nombre</div><input id="vNombre" placeholder="Ej: Cena restaurante"/></div>
+        <div class="input-row">
+          <div><div class="modal-label">Monto ($)</div><input id="vMonto" type="number" placeholder="0"/></div>
+          <div><div class="modal-label">Cuenta</div>
+            <select id="vCuenta">
+              <option value="compartido">Compartido</option>
+              <option value="erick">Erick</option>
+              <option value="fran">Fran</option>
+            </select>
+          </div>
+        </div>
+        <div><div class="modal-label">Nota (opcional)</div><input id="vNota" placeholder="Descripción corta"/></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <button class="btn btn-secondary" onclick="toggleForm('addVarForm')">Cancelar</button>
+          <button class="btn btn-primary" onclick="addVar()">Agregar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SPLIT -->
+  <div id="tab-split" class="tab-pane">
+    <div class="section-label">División del mes</div>
+    <div class="card">
+      <div class="split-person">
+        <div class="split-av av-e">ER</div>
+        <div class="split-info">
+          <div class="split-name">Erick</div>
+          <div class="split-sub">Le corresponde pagar</div>
+        </div>
+        <div class="split-amount" id="sErick">—</div>
+      </div>
+      <div class="split-person">
+        <div class="split-av av-f">FR</div>
+        <div class="split-info">
+          <div class="split-name">Fran</div>
+          <div class="split-sub">Le corresponde pagar</div>
+        </div>
+        <div class="split-amount" id="sFran">—</div>
+      </div>
+    </div>
+
+    <div class="section-label">Cuentas permanentes</div>
+    <div class="card" id="cuentasList"></div>
+    <button class="btn btn-ghost btn-full" onclick="toggleForm('addCuentaForm')" style="margin-top:6px;">+ Agregar cuenta familiar</button>
+    <div class="add-form" id="addCuentaForm">
+      <div class="form-title">NUEVA CUENTA FAMILIAR</div>
+      <div class="form-gap">
+        <div><div class="modal-label">Nombre</div><input id="ncNombre" placeholder="Ej: Gimnasio, Streaming"/></div>
+        <div class="input-row">
+          <div><div class="modal-label">Monto mensual ($)</div><input id="ncMonto" type="number" placeholder="0"/></div>
+          <div><div class="modal-label">Cuenta</div>
+            <select id="ncCuenta">
+              <option value="compartido">Compartido</option>
+              <option value="erick">Erick</option>
+              <option value="fran">Fran</option>
+            </select>
+          </div>
+        </div>
+        <div class="input-row">
+          <div><div class="modal-label">Color</div><input type="color" id="ncColor" value="#4f9ef8"/></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <button class="btn btn-secondary" onclick="toggleForm('addCuentaForm')">Cancelar</button>
+          <button class="btn btn-primary" onclick="addCuenta()">Agregar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TENDENCIA -->
+  <div id="tab-tendencia" class="tab-pane">
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot" style="background:#4f9ef8"></div>Total mensual</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#7b6ef6"></div>Por persona</div>
+    </div>
+    <div class="chart-wrap"><canvas id="tChart" role="img" aria-label="Tendencia de gastos mensuales"></canvas></div>
+    <div class="section-label">Resumen anual</div>
+    <div class="card" id="yearSummary" style="padding:4px 14px;"></div>
+  </div>
+
+  <!-- EXPORTAR -->
+  <div id="tab-exportar" class="tab-pane">
+    <div class="section-label">Resumen del mes para compartir</div>
+    <div class="export-preview" id="exportPreview"></div>
+    <div class="export-grid">
+      <button class="btn btn-secondary" onclick="copyExport()">Copiar texto</button>
+      <button class="btn btn-primary" onclick="shareExport()">Compartir</button>
+    </div>
+    <button class="btn btn-ghost btn-full" onclick="downloadCSV()">Descargar CSV completo</button>
+
+    <div class="section-label" style="margin-top:20px;">Todos los meses</div>
+    <div class="card" style="padding:4px 14px;">
+      <table class="months-table" id="allMonths"></table>
+    </div>
+  </div>
+
+  <!-- AJUSTES -->
+  <div id="tab-ajustes" class="tab-pane">
+
+    <!-- Install banner -->
+    <div class="install-banner show" id="installBanner">
+      <div class="install-title">📱 Instalar en iPhone</div>
+      <div class="install-steps">
+        1. Abre este archivo en Safari<br>
+        2. Toca el botón compartir (<strong>⎙</strong>) en la barra inferior<br>
+        3. Selecciona <strong>"Agregar a pantalla de inicio"</strong><br>
+        4. La app aparece como ícono en tu pantalla
+      </div>
+    </div>
+
+    <div class="section-label">Nombres de gastos</div>
+    <div class="card" id="editNames"></div>
+
+    <div class="section-label" style="margin-top:20px;">Datos</div>
+    <div class="card" style="padding:14px;">
+      <div style="font-size:12px;color:var(--text2);margin-bottom:12px;">Los datos se guardan automáticamente en este dispositivo (localStorage).</div>
+      <button class="btn btn-danger btn-full" onclick="resetData()">Restablecer todos los datos</button>
+    </div>
+
+    <div class="section-label" style="margin-top:20px;">Acerca de</div>
+    <div class="card" style="padding:14px;">
+      <div style="font-size:12px;color:var(--text2);line-height:1.7;">
+        App de economía del hogar<br>
+        Erick & Fran · Villarrica, Chile<br>
+        Datos desde septiembre 2023
+      </div>
+    </div>
+  </div>
+
+</div><!-- /content -->
+
+<!-- MODAL editar gasto -->
+<div class="modal-overlay" id="editModal" onclick="closeModal(event)">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="editModalTitle">Editar gasto</div>
+    <div class="modal-fields">
+      <div><div class="modal-label">Nombre</div><input id="eNombre" placeholder="Nombre del gasto"/></div>
+      <div><div class="modal-label">Monto ($)</div><input id="eMonto" type="number" placeholder="0"/></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveEditModal()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+// ─── DATA ───────────────────────────────────────────────
+const MONTHS_FULL=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const MONTHS_S=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+
+const DEFAULT_CATS = {
+  arriendo:{label:'Arriendo Villarrica',color:'#4f9ef8'},
+  electricidad:{label:'Electricidad',color:'#ffd60a'},
+  agua:{label:'Agua',color:'#34c759'},
+  gas:{label:'Gas',color:'#ff6b35'},
+  internet:{label:'Internet',color:'#7b6ef6'},
+  dividendo:{label:'Dividendo casa propia',color:'#2d8cf0'},
+  remodelacion:{label:'Remodelación depto',color:'#af52de'},
+  cocina:{label:'Cuota cocina',color:'#5ac8fa'},
+  creditoFran:{label:'Crédito Fran BCI',color:'#ff375f'},
+  leonAuto:{label:'Auto León Subaru',color:'#909090'},
+  auto:{label:'Auto Subaru XV',color:'#636363'},
+  pie:{label:'Pie depto (Fran)',color:'#00b894'},
+  abono:{label:'Abono inicial depto (Erick)',color:'#0984e3'},
+  mesa:{label:'Mesa depto nuevo',color:'#e17055'},
+  refrigerador:{label:'Refrigerador',color:'#d63031'},
+  iluminacion:{label:'Iluminación depto',color:'#fdcb6e'},
+  propital:{label:'Servicio Propital',color:'#6ab04c'},
+};
+
+const RAW_DATA = [
+  {y:2023,m:9,cats:{propital:60166,pie:600000,abono:124340,mesa:59990,refrigerador:329990,iluminacion:62930,creditoFran:121013}},
+  {y:2023,m:10,cats:{propital:60166,pie:600000,abono:124340,creditoFran:121013}},
+  {y:2023,m:11,cats:{propital:60166,pie:600000,abono:124340,creditoFran:121013}},
+  {y:2023,m:12,cats:{propital:60166,pie:600000,abono:124340,creditoFran:121013}},
+  {y:2024,m:1,cats:{propital:60166,pie:600000,abono:124340,creditoFran:121013}},
+  {y:2024,m:2,cats:{propital:60166,pie:600000,abono:124340,creditoFran:121013}},
+  {y:2024,m:3,cats:{propital:60166,arriendo:760000,electricidad:29344,agua:7800,pie:600000,creditoFran:121013}},
+  {y:2024,m:4,cats:{arriendo:760000,electricidad:75105,gas:25900,internet:30394,pie:600000,creditoFran:121013,leonAuto:114800}},
+  {y:2024,m:5,cats:{arriendo:760000,electricidad:76118,agua:28000,gas:25900,internet:30394,creditoFran:121013,leonAuto:114800}},
+  {y:2024,m:6,cats:{arriendo:760000,electricidad:156000,agua:27663,gas:25900,internet:30394,creditoFran:121013,leonAuto:114800}},
+  {y:2024,m:7,cats:{arriendo:760000,electricidad:116807,agua:29068,gas:25900,internet:21990,creditoFran:121013,leonAuto:114800}},
+  {y:2024,m:8,cats:{arriendo:760000,electricidad:123601,agua:27000,gas:21900,internet:21990,leonAuto:114800,auto:150000}},
+  {y:2024,m:9,cats:{arriendo:794960,electricidad:66521,agua:39054,gas:21900,internet:21990,leonAuto:114800,auto:150000}},
+  {y:2024,m:10,cats:{arriendo:777480,electricidad:78666,agua:30832,gas:23500,internet:21087,leonAuto:114800,auto:150000}},
+  {y:2024,m:11,cats:{arriendo:777480,electricidad:78413,agua:56704,gas:43000,internet:22309,leonAuto:114800,auto:150000}},
+  {y:2024,m:12,cats:{arriendo:777480,electricidad:82951,agua:67000,gas:25900,internet:28396,leonAuto:114800,auto:150000}},
+  {y:2025,m:1,cats:{arriendo:777480,electricidad:63504,agua:29571,internet:20638,leonAuto:114800,auto:150000}},
+  {y:2025,m:2,cats:{arriendo:220000,electricidad:22600,agua:25300,gas:21800,internet:6000,auto:150000}},
+  {y:2025,m:3,cats:{arriendo:550000,electricidad:25300,agua:20700,gas:22000,internet:22990}},
+  {y:2025,m:4,cats:{arriendo:550000,electricidad:28300,agua:25300,gas:42800,internet:22990}},
+  {y:2025,m:5,cats:{arriendo:550000,electricidad:65100,agua:23000,gas:32450,internet:22990}},
+  {y:2025,m:6,cats:{arriendo:550000,electricidad:63800,agua:29900,gas:42500,internet:22990}},
+  {y:2025,m:7,cats:{arriendo:550000,electricidad:75000,agua:29900,gas:43000,internet:22990}},
+  {y:2025,m:8,cats:{arriendo:550000,electricidad:63500,agua:29900,gas:43000,internet:32990}},
+  {y:2025,m:9,cats:{arriendo:550000,electricidad:50600,agua:30000,gas:42850,internet:32990}},
+  {y:2025,m:10,cats:{arriendo:550000,electricidad:42300,agua:27600,gas:42550,internet:32990}},
+  {y:2025,m:11,cats:{arriendo:550000,electricidad:31800,agua:28000,gas:42850,internet:33270}},
+  {y:2025,m:12,cats:{arriendo:550000,electricidad:32800,agua:28000,gas:38000,internet:33270,cocina:95484,remodelacion:1800}},
+  {y:2026,m:1,cats:{arriendo:550000,electricidad:32600,agua:32200,gas:27300,internet:33270,cocina:95484,remodelacion:724618}},
+  {y:2026,m:2,cats:{arriendo:550000,electricidad:30400,agua:29900,gas:32450,internet:33531,cocina:95484,dividendo:546545,remodelacion:724618}},
+  {y:2026,m:3,cats:{arriendo:550000,electricidad:29100,agua:23000,gas:37550,internet:33270,cocina:95484,dividendo:466802,remodelacion:724618}},
+  {y:2026,m:4,cats:{electricidad:42000,agua:28000,gas:42000,internet:33270,cocina:95484,dividendo:466900,remodelacion:724618}},
+  {y:2026,m:5,cats:{electricidad:42000,agua:28000,gas:42000,internet:33270,cocina:95484,dividendo:466900,remodelacion:724618}},
+];
+
+// ─── STATE ───────────────────────────────────────────────
+let state = {
+  data: JSON.parse(JSON.stringify(RAW_DATA)),
+  catDefs: JSON.parse(JSON.stringify(DEFAULT_CATS)),
+  extraCuentas: [],
+  extraVars: {},
+};
+
+function loadState() {
+  try {
+    const saved = localStorage.getItem('casaEF_v2');
+    if (saved) state = JSON.parse(saved);
+  } catch(e) {}
+}
+
+function saveState() {
+  try {
+    localStorage.setItem('casaEF_v2', JSON.stringify(state));
+    const now = new Date();
+    document.getElementById('saveBadge').textContent = 'Guardado ' + now.toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'});
+  } catch(e) {}
+}
+
+loadState();
+
+// ─── HELPERS ─────────────────────────────────────────────
+let currentIdx = state.data.length - 1;
+let currentTab = 'detalle';
+let tChart = null;
+let editingKey = null;
+let editingIsExtra = false;
+
+function fmt(n) { return '$' + Math.round(n).toLocaleString('es-CL'); }
+function mKey(d) { return d.y + '-' + d.m; }
+
+function getMonthTotal(d) {
+  let t = Object.values(d.cats).reduce((a,v) => a + (v||0), 0);
+  let vars = (state.extraVars[mKey(d)] || []).reduce((a,v) => a + v.monto, 0);
+  let ec = state.extraCuentas.reduce((a,c) => a + c.monto, 0);
+  return t + vars + ec;
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// ─── NAV ─────────────────────────────────────────────────
+function chM(dir) {
+  currentIdx = Math.max(0, Math.min(state.data.length - 1, currentIdx + dir));
+  render();
+}
+
+function showTab(tab, btn) {
+  currentTab = tab;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.tab-pane').forEach(t => { t.classList.remove('active'); });
+  document.getElementById('tab-' + tab).classList.add('active');
+  render();
+}
+
+function toggleForm(id) {
+  const f = document.getElementById(id);
+  f.classList.toggle('open');
+}
+
+// ─── MODAL ───────────────────────────────────────────────
+function openEditModal(key, isExtra) {
+  editingKey = key; editingIsExtra = isExtra;
+  let label, monto;
+  if (isExtra) {
+    const ec = state.extraCuentas.find(c => c.id === key);
+    label = ec.label; monto = ec.monto;
+  } else {
+    label = state.catDefs[key]?.label || key;
+    monto = state.data[currentIdx].cats[key] || 0;
+  }
+  document.getElementById('editModalTitle').textContent = 'Editar: ' + label;
+  document.getElementById('eNombre').value = label;
+  document.getElementById('eMonto').value = monto;
+  document.getElementById('editModal').classList.add('open');
+}
+
+function closeModal(e) {
+  if (!e || e.target === document.getElementById('editModal')) {
+    document.getElementById('editModal').classList.remove('open');
+    editingKey = null;
+  }
+}
+
+function saveEditModal() {
+  const nombre = document.getElementById('eNombre').value.trim();
+  const monto = parseFloat(document.getElementById('eMonto').value) || 0;
+  if (!nombre) { showToast('Escribe un nombre'); return; }
+
+  if (editingIsExtra) {
+    const ec = state.extraCuentas.find(c => c.id === editingKey);
+    if (ec) { ec.label = nombre; ec.monto = monto; }
+  } else {
+    if (state.catDefs[editingKey]) state.catDefs[editingKey].label = nombre;
+    state.data[currentIdx].cats[editingKey] = monto;
+  }
+  closeModal();
+  saveState();
+  showToast('Guardado');
+  render();
+}
+
+// ─── VAR ─────────────────────────────────────────────────
+function addVar() {
+  const nombre = document.getElementById('vNombre').value.trim();
+  const monto = parseFloat(document.getElementById('vMonto').value) || 0;
+  const cuenta = document.getElementById('vCuenta').value;
+  const nota = document.getElementById('vNota').value.trim();
+  if (!nombre || !monto) { showToast('Completa nombre y monto'); return; }
+  const k = mKey(state.data[currentIdx]);
+  if (!state.extraVars[k]) state.extraVars[k] = [];
+  state.extraVars[k].push({ id: Date.now().toString(), label: nombre, monto, cuenta, nota });
+  document.getElementById('vNombre').value = '';
+  document.getElementById('vMonto').value = '';
+  document.getElementById('vNota').value = '';
+  document.getElementById('addVarForm').classList.remove('open');
+  saveState(); showToast('Gasto variable agregado'); render();
+}
+
+function editVar(k, i) {
+  const v = state.extraVars[k][i];
+  document.getElementById('editModalTitle').textContent = 'Editar variable';
+  document.getElementById('eNombre').value = v.label;
+  document.getElementById('eMonto').value = v.monto;
+  editingKey = '__var__' + k + '__' + i;
+  editingIsExtra = false;
+  document.getElementById('editModal').classList.add('open');
+  // override saveEditModal for this case
+  document.querySelector('#editModal .btn-primary').onclick = function() {
+    const nombre = document.getElementById('eNombre').value.trim();
+    const monto = parseFloat(document.getElementById('eMonto').value) || 0;
+    if (!nombre) { showToast('Escribe un nombre'); return; }
+    state.extraVars[k][i].label = nombre;
+    state.extraVars[k][i].monto = monto;
+    document.querySelector('#editModal .btn-primary').onclick = saveEditModal;
+    closeModal(); saveState(); showToast('Guardado'); render();
+  };
+}
+
+function delVar(k, i) {
+  state.extraVars[k].splice(i, 1);
+  saveState(); showToast('Eliminado'); render();
+}
+
+// ─── CUENTAS ─────────────────────────────────────────────
+function addCuenta() {
+  const label = document.getElementById('ncNombre').value.trim();
+  const monto = parseFloat(document.getElementById('ncMonto').value) || 0;
+  const cuenta = document.getElementById('ncCuenta').value;
+  const color = document.getElementById('ncColor').value;
+  if (!label || !monto) { showToast('Completa nombre y monto'); return; }
+  state.extraCuentas.push({ id: Date.now().toString(), label, monto, cuenta, color });
+  document.getElementById('ncNombre').value = '';
+  document.getElementById('ncMonto').value = '';
+  document.getElementById('addCuentaForm').classList.remove('open');
+  saveState(); showToast('Cuenta agregada'); render();
+}
+
+function delCuenta(id) {
+  state.extraCuentas = state.extraCuentas.filter(c => c.id !== id);
+  saveState(); showToast('Cuenta eliminada'); render();
+}
+
+// ─── RENDER ──────────────────────────────────────────────
+function render() {
+  const d = state.data[currentIdx];
+  const prev = currentIdx > 0 ? state.data[currentIdx - 1] : null;
+  const total = getMonthTotal(d);
+  const prevTotal = prev ? getMonthTotal(prev) : null;
+
+  document.getElementById('mLabel').textContent = MONTHS_FULL[d.m - 1] + ' ' + d.y;
+  document.getElementById('mTotal').textContent = fmt(total);
+  document.getElementById('mCada').textContent = fmt(total / 2);
+  document.getElementById('sErick').textContent = fmt(total / 2);
+  document.getElementById('sFran').textContent = fmt(total / 2);
+
+  let diffHTML = '';
+  if (prevTotal) {
+    const diff = total - prevTotal;
+    const pct = Math.round(Math.abs(diff) / prevTotal * 100);
+    if (diff > 0) diffHTML = `<span class="pill pill-up">+${pct}% vs mes ant.</span>`;
+    else if (diff < 0) diffHTML = `<span class="pill pill-down">-${pct}% vs mes ant.</span>`;
+  }
+  document.getElementById('mDiff').innerHTML = diffHTML;
+
+  if (currentTab === 'detalle') renderDetalle(d);
+  if (currentTab === 'split') renderSplit();
+  if (currentTab === 'tendencia') renderTrend();
+  if (currentTab === 'exportar') renderExport(d, total);
+  if (currentTab === 'ajustes') renderAjustes();
+}
+
+function renderDetalle(d) {
+  const allEntries = Object.entries(d.cats).filter(([k,v]) => v > 0);
+  state.extraCuentas.forEach(c => allEntries.push(['__ec__' + c.id, c.monto]));
+  allEntries.sort((a,b) => b[1] - a[1]);
+  const max = allEntries[0] ? allEntries[0][1] : 1;
+
+  document.getElementById('catList').innerHTML = allEntries.length === 0
+    ? '<div class="cat-row"><span class="cat-name" style="color:var(--text3)">Sin gastos este mes</span></div>'
+    : allEntries.map(([k, v]) => {
+        const isEC = k.startsWith('__ec__');
+        const ecId = isEC ? k.replace('__ec__','') : null;
+        const ec = isEC ? state.extraCuentas.find(c => c.id === ecId) : null;
+        const label = isEC ? ec.label : (state.catDefs[k]?.label || k);
+        const color = isEC ? ec.color : (state.catDefs[k]?.color || '#666');
+        const pct = Math.round(v / max * 100);
+        return `<div class="cat-row">
+          <div class="cat-dot" style="background:${color}"></div>
+          <div class="cat-info"><div class="cat-name">${label}</div></div>
+          <div class="cat-bar-wrap"><div class="cat-bar" style="width:${pct}%;background:${color}"></div></div>
+          <div class="cat-amount">${fmt(v)}</div>
+          <div class="row-actions">
+            <button class="btn-xs" onclick="openEditModal('${isEC ? ecId : k}',${isEC})">editar</button>
+          </div>
+        </div>`;
+      }).join('');
+
+  const k = mKey(d);
+  const vars = state.extraVars[k] || [];
+  document.getElementById('varList').innerHTML = vars.length === 0
+    ? '<div class="cat-row"><span class="cat-name" style="color:var(--text3)">Sin gastos variables este mes</span></div>'
+    : vars.map((v, i) => `<div class="cat-row">
+        <div class="cat-dot" style="background:#ffd60a"></div>
+        <div class="cat-info">
+          <div class="cat-name">${v.label}</div>
+          ${v.nota ? `<div class="cat-note">${v.nota} · ${v.cuenta}</div>` : `<div class="cat-note">${v.cuenta}</div>`}
+        </div>
+        <div class="cat-amount">${fmt(v.monto)}</div>
+        <div class="row-actions">
+          <button class="btn-xs" onclick="editVar('${k}',${i})">editar</button>
+          <button class="btn-xs danger" onclick="delVar('${k}',${i})">✕</button>
+        </div>
+      </div>`).join('');
+}
+
+function renderSplit() {
+  document.getElementById('cuentasList').innerHTML = state.extraCuentas.length === 0
+    ? '<div class="cat-row"><span class="cat-name" style="color:var(--text3)">Sin cuentas adicionales</span></div>'
+    : state.extraCuentas.map(c => `<div class="cat-row">
+        <div class="cat-dot" style="background:${c.color}"></div>
+        <div class="cat-info">
+          <div class="cat-name">${c.label}</div>
+          <div class="cat-note">${c.cuenta}</div>
+        </div>
+        <div class="cat-amount">${fmt(c.monto)}</div>
+        <div class="row-actions">
+          <button class="btn-xs" onclick="openEditModal('${c.id}',true)">editar</button>
+          <button class="btn-xs danger" onclick="delCuenta('${c.id}')">✕</button>
+        </div>
+      </div>`).join('');
+}
+
+function renderTrend() {
+  const labels = state.data.map(d => MONTHS_S[d.m-1] + ' ' + String(d.y).slice(2));
+  const totals = state.data.map(d => getMonthTotal(d));
+  const porPersona = totals.map(t => Math.round(t / 2));
+  if (tChart) tChart.destroy();
+  tChart = new Chart(document.getElementById('tChart'), {
+    type: 'line',
+    data: { labels, datasets: [
+      { label:'Total', data:totals, borderColor:'#4f9ef8', backgroundColor:'rgba(79,158,248,0.06)', borderWidth:2, pointRadius:2, tension:0.35, fill:true },
+      { label:'Por persona', data:porPersona, borderColor:'#7b6ef6', borderWidth:1.5, borderDash:[4,3], pointRadius:1.5, tension:0.35, fill:false }
+    ]},
+    options: { responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false}, tooltip:{callbacks:{label:ctx=>fmt(ctx.raw)}} },
+      scales:{
+        x:{ ticks:{color:'#606060',font:{size:9},maxRotation:45,autoSkip:true,maxTicksLimit:12}, grid:{display:false}, border:{color:'rgba(255,255,255,0.06)'} },
+        y:{ ticks:{color:'#606060',font:{size:9},callback:v=>'$'+Math.round(v/1000)+'k'}, grid:{color:'rgba(255,255,255,0.04)'}, border:{display:false} }
+      }
+    }
+  });
+
+  const years = [...new Set(state.data.map(d => d.y))];
+  document.getElementById('yearSummary').innerHTML = years.map(y => {
+    const yd = state.data.filter(d => d.y === y);
+    const sum = yd.reduce((a,d) => a + getMonthTotal(d), 0);
+    const avg = Math.round(sum / yd.length);
+    return `<div class="year-row">
+      <span style="font-size:14px;font-weight:700;min-width:50px;">${y}</span>
+      <span style="flex:1;font-size:11px;color:var(--text2);">${yd.length} meses · prom ${fmt(avg)}</span>
+      <span style="font-size:13px;font-weight:700;">${fmt(sum)}</span>
+    </div>`;
+  }).join('');
+}
+
+function buildExportText(d, total) {
+  const mn = MONTHS_FULL[d.m-1] + ' ' + d.y;
+  let lines = [`🏠 CASA ERICK & FRAN`, `📅 ${mn}`, `${'─'.repeat(28)}`];
+  const entries = Object.entries(d.cats).filter(([k,v]) => v > 0).sort((a,b) => b[1]-a[1]);
+  lines.push('GASTOS FIJOS:');
+  entries.forEach(([k,v]) => lines.push(`  ${state.catDefs[k]?.label||k}: ${fmt(v)}`));
+  state.extraCuentas.forEach(c => lines.push(`  ${c.label}: ${fmt(c.monto)}`));
+  const vars = state.extraVars[mKey(d)] || [];
+  if (vars.length) { lines.push('GASTOS VARIABLES:'); vars.forEach(v => lines.push(`  ${v.label}: ${fmt(v.monto)}${v.nota?' ('+v.nota+')':''}`)); }
+  lines.push('─'.repeat(28));
+  lines.push(`💰 TOTAL: ${fmt(total)}`);
+  lines.push(`→ Erick paga: ${fmt(total/2)}`);
+  lines.push(`→ Fran paga:  ${fmt(total/2)}`);
+  return lines.join('\n');
+}
+
+function renderExport(d, total) {
+  document.getElementById('exportPreview').textContent = buildExportText(d, total);
+  const thead = `<tr><th>Mes</th><th style="text-align:right">Total</th><th style="text-align:right">c/u</th></tr>`;
+  const tbody = state.data.map((dd, i) => {
+    const t = getMonthTotal(dd);
+    const isCur = i === currentIdx;
+    return `<tr class="${isCur?'cur-month':''}">
+      <td>${MONTHS_S[dd.m-1]} ${dd.y}</td>
+      <td style="text-align:right;font-weight:${isCur?700:400}">${fmt(t)}</td>
+      <td style="text-align:right;color:var(--text2)">${fmt(t/2)}</td>
+    </tr>`;
+  }).join('');
+  document.getElementById('allMonths').innerHTML = thead + tbody;
+}
+
+function renderAjustes() {
+  const keys = Object.keys(state.catDefs);
+  document.getElementById('editNames').innerHTML = keys.map(k => {
+    const def = state.catDefs[k];
+    return `<div class="cat-row">
+      <div class="cat-dot" style="background:${def.color}"></div>
+      <div class="cat-info"><div class="cat-name">${def.label}</div></div>
+      <div class="row-actions">
+        <button class="btn-xs" onclick="openEditNameOnly('${k}')">renombrar</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function openEditNameOnly(k) {
+  const def = state.catDefs[k];
+  document.getElementById('editModalTitle').textContent = 'Renombrar gasto';
+  document.getElementById('eNombre').value = def.label;
+  document.getElementById('eMonto').value = '';
+  editingKey = k; editingIsExtra = false;
+  document.getElementById('eMonto').style.display = 'none';
+  document.querySelector('#editModal .modal-fields div:last-child').style.display = 'none';
+  document.getElementById('editModal').classList.add('open');
+  document.querySelector('#editModal .btn-primary').onclick = function() {
+    const nombre = document.getElementById('eNombre').value.trim();
+    if (!nombre) { showToast('Escribe un nombre'); return; }
+    state.catDefs[k].label = nombre;
+    document.getElementById('eMonto').style.display = '';
+    document.querySelector('#editModal .modal-fields div:last-child').style.display = '';
+    document.querySelector('#editModal .btn-primary').onclick = saveEditModal;
+    closeModal(); saveState(); showToast('Nombre actualizado'); render();
+  };
+}
+
+function copyExport() {
+  const d = state.data[currentIdx];
+  const txt = buildExportText(d, getMonthTotal(d));
+  navigator.clipboard.writeText(txt).then(() => showToast('Copiado')).catch(() => showToast('No se pudo copiar'));
+}
+
+function shareExport() {
+  const d = state.data[currentIdx];
+  const txt = buildExportText(d, getMonthTotal(d));
+  if (navigator.share) {
+    navigator.share({ title: 'Casa Erick & Fran', text: txt });
+  } else {
+    copyExport();
+  }
+}
+
+function downloadCSV() {
+  const rows = ['Mes,Total,Erick,Fran'];
+  state.data.forEach(d => {
+    const t = getMonthTotal(d);
+    rows.push(`${MONTHS_FULL[d.m-1]} ${d.y},${t},${Math.round(t/2)},${Math.round(t/2)}`);
+  });
+  const blob = new Blob([rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'economia_hogar_erick_fran.csv'; a.click();
+  URL.revokeObjectURL(url);
+  showToast('CSV descargado');
+}
+
+function resetData() {
+  if (!confirm('¿Seguro? Se borrarán todos los cambios y se volverá a los datos originales.')) return;
+  localStorage.removeItem('casaEF_v2');
+  state = {
+    data: JSON.parse(JSON.stringify(RAW_DATA)),
+    catDefs: JSON.parse(JSON.stringify(DEFAULT_CATS)),
+    extraCuentas: [], extraVars: {},
+  };
+  saveState(); showToast('Datos restablecidos'); render();
+}
+
+// ─── INIT ────────────────────────────────────────────────
+saveState();
+render();
+</script>
+</body>
+</html>
