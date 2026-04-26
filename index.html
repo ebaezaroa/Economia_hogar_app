@@ -370,7 +370,7 @@ const RAW=[
 // ── STATE ────────────────────────────────────────────────
 let S={data:JSON.parse(JSON.stringify(RAW)),cats:JSON.parse(JSON.stringify(DC)),cuentas:[],vars:{},remDay:25};
 let ci=S.data.length-1, ct='detalle', tChart=null, pieChart=null, mCb=null;
-let syncConnected=false, lastRemoteUpdate=0, localUpdate=false;
+let syncConnected=false;
 
 // ── FIREBASE REST API ────────────────────────────────────
 async function fbGet(path){
@@ -394,22 +394,20 @@ async function fbSet(path,data){
 
 // ── SYNC ─────────────────────────────────────────────────
 let pollInterval=null;
-let lastHash='';
-
-function hashState(s){
-  return JSON.stringify({d:s.data,c:s.cats,cu:s.cuentas,v:s.vars,r:s.remDay}).length+'_'+
-    (s.data.length)+'_'+(s.cuentas.length);
-}
+let myLastSave=0;      // timestamp of MY last save
+let remoteLastSave=0;  // timestamp of last remote save I know about
 
 async function syncToFirebase(){
   setSyncStatus('loading','Guardando...');
+  const ts=Date.now();
   const ok=await fbSet('/casaEF',{
     data:S.data, cats:S.cats, cuentas:S.cuentas,
     vars:S.vars, remDay:S.remDay,
-    updatedAt:Date.now()
+    updatedAt:ts
   });
   if(ok){
-    lastHash=hashState(S);
+    myLastSave=ts;
+    remoteLastSave=ts;
     setSyncStatus('ok','Sincronizado · '+new Date().toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'}));
   } else {
     setSyncStatus('err','Error al sincronizar');
@@ -423,9 +421,9 @@ async function syncFromFirebase(silent=false){
     await syncToFirebase();
     return;
   }
-  const remHash=JSON.stringify(remote).length+'_'+remote.data.length+'_'+(remote.cuentas||[]).length;
-  if(remHash!==lastHash){
-    // Remote changed — update local
+  const remoteTs=remote.updatedAt||0;
+  // Only update local if remote is NEWER than my last save
+  if(remoteTs>myLastSave){
     const prevTotal=S.data[ci]?tot(S.data[ci]):0;
     S={
       data:remote.data||S.data,
@@ -434,11 +432,10 @@ async function syncFromFirebase(silent=false){
       vars:remote.vars||{},
       remDay:remote.remDay||25
     };
-    lastHash=remHash;
-    // adjust ci if needed
+    remoteLastSave=remoteTs;
     if(ci>=S.data.length)ci=S.data.length-1;
     const newTotal=S.data[ci]?tot(S.data[ci]):0;
-    if(!silent&&Math.abs(newTotal-prevTotal)>0){
+    if(!silent){
       showNotif('🔄 Datos actualizados por el otro dispositivo');
     }
     setSyncStatus('ok','Sincronizado · '+new Date().toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'}));
@@ -466,7 +463,22 @@ function setSyncStatus(type,msg){
 // ── INIT ─────────────────────────────────────────────────
 async function init(){
   setSyncStatus('loading','Conectando...');
-  await syncFromFirebase(true);
+  const remote=await fbGet('/casaEF');
+  if(remote&&remote.data){
+    S={
+      data:remote.data||S.data,
+      cats:remote.cats||S.cats,
+      cuentas:remote.cuentas||[],
+      vars:remote.vars||{},
+      remDay:remote.remDay||25
+    };
+    myLastSave=remote.updatedAt||0;
+    remoteLastSave=remote.updatedAt||0;
+    setSyncStatus('ok','Sincronizado');
+  } else {
+    // First time — push initial data
+    await syncToFirebase();
+  }
   ci=S.data.length-1;
   document.getElementById('loadingScreen').classList.add('hide');
   checkRem();render();
