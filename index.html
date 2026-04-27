@@ -11,8 +11,13 @@
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' rx='40' fill='%230f0f0f'/%3E%3Cpath d='M90 28 L148 75 L148 148 L108 148 L108 105 L72 105 L72 148 L32 148 L32 75 Z' fill='%234f9ef8'/%3E%3Crect x='74' y='55' width='32' height='26' rx='5' fill='%230f0f0f'/%3E%3C/svg%3E">
 <style>
 :root{--bg:#0f0f0f;--bg2:#1a1a1a;--bg3:#242424;--border:rgba(255,255,255,0.08);--border2:rgba(255,255,255,0.14);--text:#f0f0f0;--text2:#909090;--text3:#505050;--accent:#4f9ef8;--green:#34c759;--red:#ff453a;--amber:#ffd60a;--radius:14px;--radius-sm:9px;}
+body.light{--bg:#f2f2f7;--bg2:#ffffff;--bg3:#e5e5ea;--border:rgba(0,0,0,0.08);--border2:rgba(0,0,0,0.14);--text:#1c1c1e;--text2:#6c6c70;--text3:#aeaeb2;}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
-body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;min-height:-webkit-fill-available;overscroll-behavior:none;}
+body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;min-height:-webkit-fill-available;overscroll-behavior:none;transition:background .25s,color .25s;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+@keyframes numPop{0%{transform:scale(1);}45%{transform:scale(1.07);}100%{transform:scale(1);}}
+.pane.on{animation:fadeUp .2s ease;}
+.anim-num{display:inline-block;animation:numPop .28s ease;}
 .header{position:sticky;top:0;z-index:50;background:rgba(15,15,15,0.92);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);border-bottom:0.5px solid var(--border);padding:env(safe-area-inset-top,0px) 0 0;}
 .header-inner{padding:12px 16px 8px;display:flex;align-items:center;justify-content:space-between;}
 .header-title{font-size:17px;font-weight:600;letter-spacing:-.3px;}
@@ -93,6 +98,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',sans-serif;ba
 .leg-d{width:10px;height:3px;border-radius:2px;}
 .yr-row{display:flex;align-items:center;padding:8px 0;border-bottom:0.5px solid var(--border);}
 .yr-row:last-child{border-bottom:none;}
+/* HISTORIAL */
+.hrow{display:flex;align-items:flex-start;gap:10px;padding:10px 13px;border-bottom:0.5px solid var(--border);}
+.hrow:last-child{border-bottom:none;}
+.hicon{font-size:18px;flex-shrink:0;margin-top:1px;}
+.hinfo{flex:1;min-width:0;}
+.hmsg{font-size:12px;color:var(--text);line-height:1.4;}
+.htime{font-size:10px;color:var(--text3);margin-top:3px;}
 /* EXPORT */
 .exp-pre{background:var(--bg3);border-radius:var(--radius-sm);padding:11px;font-size:10px;white-space:pre-wrap;line-height:1.7;margin-bottom:8px;max-height:210px;overflow-y:auto;font-family:'SF Mono',monospace;border:0.5px solid var(--border);}
 .eg2{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:7px;}
@@ -183,6 +195,7 @@ input[type=color]{padding:3px;height:34px;cursor:pointer;}
   <button class="tab" onclick="showTab('split',this)">División</button>
   <button class="tab" onclick="showTab('tendencia',this)">Tendencia</button>
   <button class="tab" onclick="showTab('exportar',this)">Exportar</button>
+  <button class="tab" onclick="showTab('historial',this)">Historial</button>
   <button class="tab" onclick="showTab('ajustes',this)">Ajustes</button>
 </div>
 
@@ -263,7 +276,25 @@ input[type=color]{padding:3px;height:34px;cursor:pointer;}
   <div class="card" style="padding:4px 13px;"><table class="mtbl" id="allMths"></table></div>
 </div>
 
+
+<div id="pane-historial" class="pane">
+  <div class="slabel">Últimos cambios</div>
+  <div class="card" id="histList"></div>
+</div>
+
 <div id="pane-ajustes" class="pane">
+  <div class="slabel">Apariencia</div>
+  <div class="card" style="padding:13px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;">
+      <div>
+        <div style="font-size:13px;font-weight:500;">Modo claro</div>
+        <div style="font-size:11px;color:var(--text2);margin-top:2px;">Cambiar entre oscuro y claro</div>
+      </div>
+      <div onclick="toggleTheme()" id="themeToggle" style="width:44px;height:26px;border-radius:13px;background:var(--bg3);border:0.5px solid var(--border2);position:relative;cursor:pointer;transition:background .2s;">
+        <div id="themeKnob" style="position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:var(--text2);transition:all .2s;"></div>
+      </div>
+    </div>
+  </div>
   <div class="slabel">Sincronización</div>
   <div class="card" style="padding:13px;">
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
@@ -271,6 +302,14 @@ input[type=color]{padding:3px;height:34px;cursor:pointer;}
       <div style="font-size:13px;font-weight:500;" id="syncStatus">Conectando...</div>
     </div>
     <div style="font-size:11px;color:var(--text2);line-height:1.6;">Los cambios se sincronizan en tiempo real entre todos los dispositivos. Cuando Erick o Fran editen algo, el otro lo ve al instante.</div>
+  </div>
+  <div class="slabel">¿Quién usa este dispositivo?</div>
+  <div class="card" style="padding:13px;">
+    <div class="flabel" style="margin-bottom:6px;">Esto aparecerá en el historial de cambios</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+      <button id="btnErick" class="btn btn-p" onclick="setWho('Erick')">👤 Erick</button>
+      <button id="btnFran" class="btn btn-s" onclick="setWho('Fran')">👤 Fran</button>
+    </div>
   </div>
   <div class="slabel">Recordatorio de pago</div>
   <div class="card" style="padding:13px;">
@@ -481,6 +520,7 @@ async function init(){
   }
   ci=S.data.length-1;
   document.getElementById('loadingScreen').classList.add('hide');
+  updateThemeUI();
   checkRem();render();
   startPolling();
 }
@@ -489,6 +529,59 @@ async function init(){
 async function save(){
   await syncToFirebase();
 }
+
+
+// ── THEME ────────────────────────────────────────────────
+function toggleTheme(){
+  const isLight=document.body.classList.toggle('light');
+  S.lightMode=isLight;
+  updateThemeUI();
+  save();
+}
+function updateThemeUI(){
+  const isLight=S.lightMode||false;
+  const tog=document.getElementById('themeToggle');
+  const knob=document.getElementById('themeKnob');
+  if(tog){tog.style.background=isLight?'#4f9ef8':'var(--bg3)';}
+  if(knob){knob.style.left=isLight?'21px':'3px';knob.style.background=isLight?'#fff':'var(--text2)';}
+  document.body.classList.toggle('light',isLight);
+}
+
+// ── HISTORY ──────────────────────────────────────────────
+function addHistory(who, action, detail){
+  if(!S.history)S.history=[];
+  S.history.unshift({who,action,detail,ts:Date.now()});
+  if(S.history.length>50)S.history=S.history.slice(0,50);
+}
+
+function renderHistorial(){
+  const hist=S.history||[];
+  if(!hist.length){
+    document.getElementById('histList').innerHTML='<div class="empty">Sin cambios registrados aún</div>';
+    return;
+  }
+  document.getElementById('histList').innerHTML=hist.map(h=>{
+    const d=new Date(h.ts);
+    const dateStr=d.toLocaleDateString('es-CL',{day:'numeric',month:'short'})+' · '+d.toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'});
+    const icon=h.who==='Erick'?'👤':'👤';
+    const color=h.who==='Erick'?'#4f9ef8':'#7b6ef6';
+    return `<div class="hrow">
+      <div class="hicon" style="color:${color}">●</div>
+      <div class="hinfo">
+        <div class="hmsg"><strong style="color:${color}">${h.who}</strong> ${h.action}${h.detail?': <em>'+h.detail+'</em>':''}</div>
+        <div class="htime">${dateStr}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── ANIMATED NUMBER ───────────────────────────────────────
+function animNum(id, val){
+  const el=document.getElementById(id);
+  if(!el)return;
+  el.innerHTML='<span class="anim-num">'+val+'</span>';
+}
+
 
 // ── HELPERS ──────────────────────────────────────────────
 function fmt(n){return '$'+Math.round(n).toLocaleString('es-CL');}
@@ -526,6 +619,13 @@ function checkRem(){
 }
 
 function saveRem(){S.remDay=parseInt(document.getElementById('remDay').value)||25;save();toast('Recordatorio guardado');checkRem();}
+function setWho(name){
+  S.whoAmI=name;
+  save();
+  document.getElementById('btnErick').className='btn '+(name==='Erick'?'btn-p':'btn-s');
+  document.getElementById('btnFran').className='btn '+(name==='Fran'?'btn-p':'btn-s');
+  toast('Hola, '+name+'! 👋');
+}
 
 function chM(d){ci=Math.max(0,Math.min(S.data.length-1,ci+d));render();}
 function showTab(tab,btn){
@@ -576,10 +676,10 @@ function render(){
   const d=S.data[ci],prev=ci>0?S.data[ci-1]:null;
   const t=tot(d),pt=prev?tot(prev):null;
   document.getElementById('mLbl').textContent=MF[d.m-1]+' '+d.y;
-  document.getElementById('mTot').textContent=fmt(t);
-  document.getElementById('mCada').textContent=fmt(t/2);
-  document.getElementById('spE').textContent=fmt(t/2);
-  document.getElementById('spF').textContent=fmt(t/2);
+  animNum('mTot',fmt(t));
+  animNum('mCada',fmt(t/2));
+  animNum('spE',fmt(t/2));
+  animNum('spF',fmt(t/2));
   let dh='';
   if(pt){const df=t-pt,pct=Math.round(Math.abs(df)/pt*100);
     dh=df>0?`<span class="pill p-up">▲ ${pct}% vs ant.</span>`:df<0?`<span class="pill p-dn">▼ ${pct}% vs ant.</span>`:`<span class="pill p-eq">= igual</span>`;}
@@ -590,6 +690,7 @@ function render(){
   if(ct==='split')renderSplit();
   if(ct==='tendencia')renderTrend();
   if(ct==='exportar')renderExp(d,t);
+  if(ct==='historial')renderHistorial();
   if(ct==='ajustes')renderAj();
 }
 
@@ -667,6 +768,10 @@ function renderExp(d,t){
 
 function renderAj(){
   document.getElementById('remDay').value=S.remDay||25;
+  const who=S.whoAmI||'Erick';
+  const be=document.getElementById('btnErick');const bf=document.getElementById('btnFran');
+  if(be)be.className='btn '+(who==='Erick'?'btn-p':'btn-s');
+  if(bf)bf.className='btn '+(who==='Fran'?'btn-p':'btn-s');
   document.getElementById('namesList').innerHTML=Object.entries(S.cats).map(([k,def])=>`<div class="crow"><div class="cdot" style="background:${def.color}"></div><div class="cinfo"><div class="cname">${def.label}</div></div><div class="acts"><button class="xbtn" onclick="renG('${k}')">renombrar</button></div></div>`).join('');
 }
 
@@ -676,7 +781,12 @@ function editG(k,isC){
   openM('Editar gasto',`<div><div class="flabel">Nombre</div><input id="eN" value="${isC?ec.label:(S.cats[k]?.label||k)}"/></div><div><div class="flabel">Monto ($)</div><input id="eV" type="number" value="${isC?ec.monto:(d.cats[k]||0)}"/></div>`,()=>{
     const n=document.getElementById('eN').value.trim(),v=parseFloat(document.getElementById('eV').value)||0;
     if(!n){toast('Escribe un nombre');return;}
+    const oldVal=isC?ec.monto:(d.cats[k]||0);
+    const oldLbl=isC?ec.label:(S.cats[k]?.label||k);
     if(isC){ec.label=n;ec.monto=v;}else{if(S.cats[k])S.cats[k].label=n;d.cats[k]=v;}
+    const who=S.whoAmI||'Erick';
+    if(oldLbl!==n)addHistory(who,'renombró',oldLbl+' → '+n);
+    if(oldVal!==v)addHistory(who,'editó '+n,fmt(oldVal)+' → '+fmt(v));
     closeM();save();toast('Guardado y sincronizado ✓');render();
   });
 }
@@ -689,6 +799,8 @@ function addVar(){
   S.vars[k].push({id:Date.now().toString(),label:n,monto:m,cuenta:c,nota:o});
   document.getElementById('vN').value='';document.getElementById('vM').value='';document.getElementById('vO').value='';
   document.getElementById('fVar').classList.remove('on');
+  const who=S.whoAmI||'Erick';
+  addHistory(who,'agregó gasto variable',n+' '+fmt(m));
   save();toast('Agregado y sincronizado ✓');render();
 }
 
