@@ -57,6 +57,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',sans-serif;ba
 .slabel:first-child{margin-top:0;}
 .card{background:var(--bg2);border-radius:var(--radius);border:0.5px solid var(--border);overflow:hidden;margin-bottom:8px;}
 .crow{display:flex;align-items:center;gap:8px;padding:10px 13px;border-bottom:0.5px solid var(--border);}
+.swipe-row{position:relative;overflow:hidden;transition:transform .25s ease;}
+.swipe-row.swiped{transform:translateX(-88px);}
+.swipe-actions{display:flex;gap:3px;flex-shrink:0;}
 .crow:last-child{border-bottom:none;}
 .cdot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
 .cinfo{flex:1;min-width:0;}
@@ -442,6 +445,10 @@ async function syncToFirebase(){
   const ok=await fbSet('/casaEF',{
     data:S.data, cats:S.cats, cuentas:S.cuentas,
     vars:S.vars, remDay:S.remDay,
+    comments:S.comments||{},
+    history:S.history||[],
+    whoAmI:S.whoAmI||'Erick',
+    lightMode:S.lightMode||false,
     updatedAt:ts
   });
   if(ok){
@@ -469,7 +476,11 @@ async function syncFromFirebase(silent=false){
       cats:remote.cats||S.cats,
       cuentas:remote.cuentas||[],
       vars:remote.vars||{},
-      remDay:remote.remDay||25
+      remDay:remote.remDay||25,
+      comments:remote.comments||{},
+      history:remote.history||[],
+      whoAmI:remote.whoAmI||S.whoAmI||'Erick',
+      lightMode:remote.lightMode||false
     };
     remoteLastSave=remoteTs;
     if(ci>=S.data.length)ci=S.data.length-1;
@@ -509,7 +520,11 @@ async function init(){
       cats:remote.cats||S.cats,
       cuentas:remote.cuentas||[],
       vars:remote.vars||{},
-      remDay:remote.remDay||25
+      remDay:remote.remDay||25,
+      comments:remote.comments||{},
+      history:remote.history||[],
+      whoAmI:remote.whoAmI||S.whoAmI||'Erick',
+      lightMode:remote.lightMode||false
     };
     myLastSave=remote.updatedAt||0;
     remoteLastSave=remote.updatedAt||0;
@@ -529,6 +544,55 @@ async function init(){
 async function save(){
   await syncToFirebase();
 }
+
+// ── SWIPE TO REVEAL ACTIONS ──────────────────────────────
+let swipeStart=null,swipeEl=null,lastSwiped=null;
+function initSwipe(){
+  document.querySelectorAll('.swipe-row').forEach(row=>{
+    row.addEventListener('touchstart',e=>{
+      swipeStart=e.touches[0].clientX;
+      swipeEl=row;
+    },{passive:true});
+    row.addEventListener('touchmove',e=>{
+      if(!swipeStart)return;
+      const dx=e.touches[0].clientX-swipeStart;
+      if(dx<-20){
+        if(lastSwiped&&lastSwiped!==row)lastSwiped.classList.remove('swiped');
+        row.classList.add('swiped');
+        lastSwiped=row;
+      } else if(dx>10){
+        row.classList.remove('swiped');
+      }
+    },{passive:true});
+    row.addEventListener('touchend',()=>{swipeStart=null;});
+  });
+  // tap outside to close
+  document.addEventListener('touchstart',e=>{
+    if(lastSwiped&&!lastSwiped.contains(e.target)){
+      lastSwiped.classList.remove('swiped');
+      lastSwiped=null;
+    }
+  },{passive:true});
+}
+
+// ── COMMENTS ─────────────────────────────────────────────
+function addComment(k, lbl){
+  const d=S.data[ci];
+  const ck=mk(d)+'_'+k;
+  if(!S.comments)S.comments={};
+  const cur=S.comments[ck]||'';
+  openM('Comentario: '+lbl,
+    `<div><div class="flabel">Comentario (ej: subió por el frío)</div><input id="cmtVal" value="${cur}" placeholder="Escribe un comentario..."/></div>`,
+    ()=>{
+      const val=document.getElementById('cmtVal').value.trim();
+      if(!S.comments)S.comments={};
+      if(val)S.comments[ck]=val;
+      else delete S.comments[ck];
+      closeM();save();toast('Comentario guardado');render();
+    }
+  );
+}
+
 
 
 // ── THEME ────────────────────────────────────────────────
@@ -695,17 +759,51 @@ function render(){
 }
 
 function renderD(d){
-  const es=Object.entries(d.cats).filter(([k,v])=>v>0);
+  // Show ALL cats (including zero), sorted by value desc, zeros at bottom
+  const es=Object.entries(d.cats).sort((a,b)=>{
+    if(b[1]===0&&a[1]===0)return 0;
+    if(a[1]===0)return 1;
+    if(b[1]===0)return -1;
+    return b[1]-a[1];
+  });
   S.cuentas.forEach(c=>es.push(['__'+c.id,c.monto]));
-  es.sort((a,b)=>b[1]-a[1]);const mx=es[0]?es[0][1]:1;
+  const mx=Math.max(...es.map(([,v])=>v),1);
   document.getElementById('catList').innerHTML=es.length?es.map(([k,v])=>{
     const isC=k.startsWith('__');const ec=isC?S.cuentas.find(c=>c.id===k.slice(2)):null;
     const lbl=isC?ec.label:(S.cats[k]?.label||k);const col=isC?ec.color:(S.cats[k]?.color||'#888');
     const pct=Math.round(v/mx*100);
-    return `<div class="crow"><div class="cdot" style="background:${col}"></div><div class="cinfo"><div class="cname">${lbl}</div></div><div class="cbar"><div class="cbarf" style="width:${pct}%;background:${col}"></div></div><div class="camt">${fmt(v)}</div><div class="acts"><button class="xbtn" onclick="editG('${k}',${isC})">editar</button></div></div>`;
+    const isZero=v===0;
+    const comment=S.comments&&S.comments[mk(d)+'_'+k]||'';
+    return `<div class="crow swipe-row" data-key="${k}" data-isC="${isC}">
+      <div class="cdot" style="background:${col};opacity:${isZero?0.4:1}"></div>
+      <div class="cinfo">
+        <div class="cname" style="opacity:${isZero?0.45:1}">${lbl}</div>
+        ${comment?`<div class="cnote">💬 ${comment}</div>`:''}
+      </div>
+      <div class="cbar"><div class="cbarf" style="width:${pct}%;background:${col}"></div></div>
+      <div class="camt" style="opacity:${isZero?0.4:1}">${isZero?'$0':fmt(v)}</div>
+      <div class="acts swipe-actions" id="acts_${k}">
+        <button class="xbtn" onclick="editG('${k}',${isC})">editar</button>
+        <button class="xbtn" onclick="addComment('${k}','${lbl.replace(/'/g,"\'")}')">💬</button>
+      </div>
+    </div>`;
   }).join(''):`<div class="empty">Sin gastos — toca editar para agregar montos</div>`;
   const vrs=S.vars[mk(d)]||[];
-  document.getElementById('varList').innerHTML=vrs.length?vrs.map((v,i)=>`<div class="crow"><div class="cdot" style="background:#ffd60a"></div><div class="cinfo"><div class="cname">${v.label}</div><div class="cnote">${v.cuenta}${v.nota?' · '+v.nota:''}</div></div><div class="camt">${fmt(v.monto)}</div><div class="acts"><button class="xbtn" onclick="editV(${i})">editar</button><button class="xbtn red" onclick="delV(${i})">✕</button></div></div>`).join(''):`<div class="empty">Sin gastos variables este mes</div>`;
+  document.getElementById('varList').innerHTML=vrs.length?vrs.map((v,i)=>{
+    return `<div class="crow swipe-row" data-varidx="${i}">
+      <div class="cdot" style="background:#ffd60a"></div>
+      <div class="cinfo">
+        <div class="cname">${v.label}</div>
+        <div class="cnote">${v.cuenta}${v.nota?' · '+v.nota:''}</div>
+      </div>
+      <div class="camt">${fmt(v.monto)}</div>
+      <div class="acts swipe-actions" id="acts_v${i}">
+        <button class="xbtn" onclick="editV(${i})">editar</button>
+        <button class="xbtn red" onclick="delV(${i})">✕</button>
+      </div>
+    </div>`;
+  }).join(''):`<div class="empty">Sin gastos variables este mes</div>`;
+  initSwipe();
 }
 
 function renderComp(d,prev){
