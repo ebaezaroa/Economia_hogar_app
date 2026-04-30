@@ -668,22 +668,52 @@ function openAddMonth() {
   var opts = MF.map(function(m,i){
     return '<option value="'+(i+1)+'"'+(i+1===nm?' selected':'')+'>'+m+'</option>';
   }).join('');
+  var lastLabel = MF[last.m-1] + ' ' + last.y;
+  window._copyMode = true;
   openM('Agregar nuevo mes',
     '<div><div class="flabel">Mes</div><select id="nmM">'+opts+'</select></div>' +
     '<div><div class="flabel">Año</div><input id="nmY" type="number" value="'+ny+'" min="2020" max="2035"/></div>' +
-    '<div style="font-size:11px;color:var(--text3);margin-top:4px;">Se crea con montos en cero.</div>',
+    '<div style="margin-top:10px;background:var(--bg3);border-radius:var(--radius-sm);padding:10px;">' +
+    '<div class="flabel" style="margin-bottom:8px;">¿Copiar valores de '+lastLabel+'?</div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">' +
+    '<button type="button" id="btnCopyYes" onclick="setCopyMode(true)" class="btn btn-p" style="font-size:11px;">✓ Sí, copiar</button>' +
+    '<button type="button" id="btnCopyNo" onclick="setCopyMode(false)" class="btn btn-s" style="font-size:11px;">✕ En cero</button>' +
+    '</div>' +
+    '<div style="font-size:10px;color:var(--text3);margin-top:6px;" id="copyModeHint">Copia todos los montos de '+lastLabel+'</div>' +
+    '</div>',
     function() {
       var m = parseInt(document.getElementById('nmM').value);
       var y = parseInt(document.getElementById('nmY').value);
       if (S.data.find(function(d){return d.y===y&&d.m===m;})) { toast('Ese mes ya existe'); return; }
-      var lastCats = {};
-      Object.keys(last.cats).forEach(function(k){lastCats[k]=0;});
-      S.data.push({y:y, m:m, cats:lastCats});
+      var copyVals = window._copyMode !== false;
+      var newCats = {};
+      Object.keys(last.cats).forEach(function(k){
+        newCats[k] = copyVals ? (last.cats[k] || 0) : 0;
+      });
+      S.data.push({y:y, m:m, cats:newCats});
       S.data.sort(function(a,b){return a.y!==b.y?a.y-b.y:a.m-b.m;});
       ci = S.data.findIndex(function(d){return d.y===y&&d.m===m;});
-      closeM(); save(); toast(MF[m-1]+' '+y+' agregado ✓'); render();
+      window._copyMode = true;
+      closeM();
+      save();
+      toast(MF[m-1]+' '+y+' agregado '+(copyVals?'con valores copiados ✓':'en cero ✓'));
+      render();
     }
   );
+}
+
+function setCopyMode(val) {
+  window._copyMode = val;
+  var yes = document.getElementById('btnCopyYes');
+  var no  = document.getElementById('btnCopyNo');
+  var hint = document.getElementById('copyModeHint');
+  var last = S.data[S.data.length-1];
+  var lastLabel = MF[last.m-1] + ' ' + last.y;
+  if (yes) yes.className = 'btn ' + (val ? 'btn-p' : 'btn-s');
+  if (no)  no.className  = 'btn ' + (!val ? 'btn-p' : 'btn-s');
+  if (hint) hint.textContent = val
+    ? 'Copia todos los montos de ' + lastLabel
+    : 'El mes nuevo comienza con todos los gastos en $0';
 }
 
 // ── SWIPE ────────────────────────────────────────────────
