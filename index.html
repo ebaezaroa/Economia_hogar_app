@@ -465,8 +465,14 @@ async function fbGet(path) {
     return await r.json();
   } catch(e) { return null; }
 }
+const FB_SECRET = 'casaEF_erick_fran_2024';
+
 async function fbSet(path, data) {
   try {
+    // Inject secret into data so Firebase rules can validate it
+    if (typeof data === 'object' && data !== null) {
+      data.secret = FB_SECRET;
+    }
     const r = await fetch(FB + path + '.json', {
       method: 'PUT',
       headers: {'Content-Type':'application/json'},
