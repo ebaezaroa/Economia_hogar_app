@@ -214,6 +214,7 @@ input[type=color] { padding:3px; height:34px; cursor:pointer; }
     <span class="mlabel" id="mLbl">—</span>
     <button class="nbtn" onclick="chM(1)">&#8250;</button>
     <button class="abtn" onclick="openAddMonth()">+</button>
+    <button class="nbtn" onclick="deleteMonth()" title="Eliminar mes" style="color:var(--red);font-size:14px;">🗑</button>
   </div>
 </div>
 
@@ -714,6 +715,31 @@ function setCopyMode(val) {
   if (hint) hint.textContent = val
     ? 'Copia todos los montos de ' + lastLabel
     : 'El mes nuevo comienza con todos los gastos en $0';
+}
+
+// ── DELETE MONTH ─────────────────────────────────────────
+function deleteMonth() {
+  var d = S.data[ci];
+  var label = MF[d.m-1] + ' ' + d.y;
+  if (S.data.length <= 1) { toast('No puedes eliminar el único mes'); return; }
+  openM('Eliminar mes',
+    '<div style="text-align:center;padding:8px 0;">' +
+    '<div style="font-size:32px;margin-bottom:10px;">🗑️</div>' +
+    '<div style="font-size:14px;font-weight:600;margin-bottom:6px;">¿Eliminar ' + label + '?</div>' +
+    '<div style="font-size:12px;color:var(--text2);line-height:1.5;">Se borrarán todos los gastos, pagos y comentarios de este mes. Esta acción no se puede deshacer.</div>' +
+    '</div>',
+    function() {
+      S.data.splice(ci, 1);
+      // also clean up vars, paid, comments for this month
+      var mk2 = d.y + '-' + d.m;
+      delete S.vars[mk2];
+      Object.keys(S.paid).forEach(function(k){ if(k.startsWith(mk2)) delete S.paid[k]; });
+      Object.keys(S.comments).forEach(function(k){ if(k.startsWith(mk2)) delete S.comments[k]; });
+      if (ci >= S.data.length) ci = S.data.length - 1;
+      addHist(S.whoAmI||'Erick', 'eliminó el mes', label);
+      closeM(); save(); toast(label + ' eliminado'); render();
+    }
+  );
 }
 
 // ── SWIPE ────────────────────────────────────────────────
