@@ -58,6 +58,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',sans-serif;ba
 .card{background:var(--bg2);border-radius:var(--radius);border:0.5px solid var(--border);overflow:hidden;margin-bottom:8px;}
 .crow{display:flex;align-items:center;gap:8px;padding:10px 13px;border-bottom:0.5px solid var(--border);}
 .swipe-row{position:relative;overflow:hidden;transition:transform .25s ease;}
+.pay-btn{background:none;border:1.5px solid var(--border2);border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;font-size:11px;color:var(--text3);transition:all .2s;}
+.pay-btn.paid{background:rgba(52,199,89,0.15);border-color:var(--green);color:var(--green);}
+.pay-who{font-size:10px;color:var(--green);margin-top:2px;font-weight:500;}
 .swipe-row.swiped{transform:translateX(-88px);}
 .swipe-actions{display:flex;gap:3px;flex-shrink:0;}
 .crow:last-child{border-bottom:none;}
@@ -246,6 +249,8 @@ input[type=color]{padding:3px;height:34px;cursor:pointer;}
     <div class="sp-row"><div class="sp-av av-e">ER</div><div style="flex:1"><div style="font-size:14px;font-weight:600;">Erick</div><div style="font-size:10px;color:var(--text2);">Le corresponde pagar</div></div><div style="font-size:19px;font-weight:700;" id="spE">—</div></div>
     <div class="sp-row"><div class="sp-av" style="background:rgba(123,110,246,.2);color:#7b6ef6;">FR</div><div style="flex:1"><div style="font-size:14px;font-weight:600;">Fran</div><div style="font-size:10px;color:var(--text2);">Le corresponde pagar</div></div><div style="font-size:19px;font-weight:700;" id="spF">—</div></div>
   </div>
+  <div class="slabel" style="margin-top:16px;">Estado de pagos del mes</div>
+  <div class="card" id="paidSummary"></div>
   <div class="slabel">Cuentas permanentes</div>
   <div class="card" id="cuentasList"></div>
   <button class="btn btn-g" onclick="tog('fCuenta')">+ Nueva cuenta familiar</button>
@@ -324,6 +329,8 @@ input[type=color]{padding:3px;height:34px;cursor:pointer;}
   </div>
   <div class="slabel">Renombrar gastos</div>
   <div class="card" id="namesList"></div>
+  <div class="slabel">Números de cliente</div>
+  <div class="card" id="clientNumsList"></div>
   <div class="slabel">Datos</div>
   <div class="card" style="padding:13px;">
     <div style="font-size:12px;color:var(--text2);margin-bottom:10px;">Los datos se sincronizan con Firebase y se guardan en la nube.</div>
@@ -446,6 +453,8 @@ async function syncToFirebase(){
     data:S.data, cats:S.cats, cuentas:S.cuentas,
     vars:S.vars, remDay:S.remDay,
     comments:S.comments||{},
+    paid:S.paid||{},
+    clientNums:S.clientNums||{},
     history:S.history||[],
     whoAmI:S.whoAmI||'Erick',
     lightMode:S.lightMode||false,
@@ -478,6 +487,8 @@ async function syncFromFirebase(silent=false){
       vars:remote.vars||{},
       remDay:remote.remDay||25,
       comments:remote.comments||{},
+      paid:remote.paid||{},
+      clientNums:remote.clientNums||{},
       history:remote.history||[],
       whoAmI:remote.whoAmI||S.whoAmI||'Erick',
       lightMode:remote.lightMode||false
@@ -522,6 +533,8 @@ async function init(){
       vars:remote.vars||{},
       remDay:remote.remDay||25,
       comments:remote.comments||{},
+      paid:remote.paid||{},
+      clientNums:remote.clientNums||{},
       history:remote.history||[],
       whoAmI:remote.whoAmI||S.whoAmI||'Erick',
       lightMode:remote.lightMode||false
@@ -573,6 +586,47 @@ function initSwipe(){
       lastSwiped=null;
     }
   },{passive:true});
+}
+
+// ── PAID STATUS ──────────────────────────────────────────
+function togglePaid(k, lbl, isC){
+  const d=S.data[ci];
+  const paidKey=mk(d)+'_'+k+'_paid';
+  if(!S.paid)S.paid={};
+  if(S.paid[paidKey]){
+    delete S.paid[paidKey];
+    toast('Marcado como pendiente');
+  } else {
+    const who=S.whoAmI||'Erick';
+    S.paid[paidKey]={who,ts:Date.now()};
+    addHistory(who,'confirmó pago de',lbl);
+    toast('✅ '+lbl+' pagado por '+who);
+  }
+  save();render();
+}
+
+// ── CLIENT NUMBERS ───────────────────────────────────────
+function editClientNum(k, lbl){
+  if(!S.clientNums)S.clientNums={};
+  const cur=S.clientNums[k]||'';
+  openM('N° cliente: '+lbl,
+    `<div>
+      <div class="flabel">Número de cliente / cuenta</div>
+      <input id="cnVal" value="${cur}" placeholder="Ej: 000008050222" inputmode="numeric"/>
+      ${cur?'<div style="margin-top:8px;"><button class="btn btn-danger" style="width:100%;font-size:11px;" onclick="clearClientNum(''+k+'')">Eliminar número</button></div>':''}
+    </div>`,
+    ()=>{
+      const val=document.getElementById('cnVal').value.trim();
+      if(!S.clientNums)S.clientNums={};
+      if(val)S.clientNums[k]=val;
+      else delete S.clientNums[k];
+      closeM();save();toast('Número guardado');render();
+    }
+  );
+}
+function clearClientNum(k){
+  if(S.clientNums)delete S.clientNums[k];
+  closeM();save();toast('Número eliminado');render();
 }
 
 // ── COMMENTS ─────────────────────────────────────────────
@@ -719,9 +773,8 @@ function openAddMonth(){
   const last=S.data[S.data.length-1];
   let ny=last.y,nm=last.m+1;if(nm>12){nm=1;ny++;}
   openM('Agregar nuevo mes',
-    `<div><div class="flabel">Mes</div><select id="nmM">${MF.map((m,i)=>`<option value="${i+1}"${i+1===nm?' selected':''}>${m}</option>`).join('')}</select></div>
-     <div><div class="flabel">Año</div><input id="nmY" type="number" value="${ny}" min="2020" max="2035"/></div>
-     <div style="font-size:11px;color:var(--text3);margin-top:2px;">Se crea con montos en cero. Edita cada gasto después.</div>`,
+(()=>{const opts=MF.map((m,i)=>'<option value="'+(i+1)+'"'+(i+1===nm?' selected':'')+'>'+m+'</option>').join('');
+     return '<div><div class="flabel">Mes</div><select id="nmM">'+opts+'</select></div><div><div class="flabel">Año</div><input id="nmY" type="number" value="'+ny+'" min="2020" max="2035"/></div><div style="font-size:11px;color:var(--text3);margin-top:2px;">Se crea con montos en cero. Edita cada gasto después.</div>';})(),
     ()=>{
       const m=parseInt(document.getElementById('nmM').value);
       const y=parseInt(document.getElementById('nmY').value);
@@ -774,17 +827,27 @@ function renderD(d){
     const pct=Math.round(v/mx*100);
     const isZero=v===0;
     const comment=S.comments&&S.comments[mk(d)+'_'+k]||'';
-    return `<div class="crow swipe-row" data-key="${k}" data-isC="${isC}">
-      <div class="cdot" style="background:${col};opacity:${isZero?0.4:1}"></div>
+    const paidKey=mk(d)+'_'+k+'_paid';
+    const paidInfo=S.paid&&S.paid[paidKey];
+    const isPaid=!!paidInfo;
+    return `<div class="crow swipe-row" data-key="${k}" data-isC="${isC}" style="${isPaid?'background:rgba(52,199,89,0.05)':''}">
+      <button class="pay-btn ${isPaid?'paid':''}" onclick="togglePaid('${k}','${lbl.replace(/'/g,"\'")}','${isC}')" title="${isPaid?'Marcar como pendiente':'Marcar como pagado'}">
+        ${isPaid?'✓':''}
+      </button>
       <div class="cinfo">
         <div class="cname" style="opacity:${isZero?0.45:1}">${lbl}</div>
-        ${comment?`<div class="cnote">💬 ${comment}</div>`:''}
+        ${(S.clientNums&&S.clientNums[k])?'<div class="cnote">🔢 '+S.clientNums[k]+'</div>':''}
+        ${isPaid?'<div class="pay-who">✅ Pagó '+paidInfo.who+'</div>':''}
+        ${comment?'<div class="cnote">💬 '+comment+'</div>':''}
       </div>
-      <div class="cbar"><div class="cbarf" style="width:${pct}%;background:${col}"></div></div>
-      <div class="camt" style="opacity:${isZero?0.4:1}">${isZero?'$0':fmt(v)}</div>
+      <div class="cbar"><div class="cbarf" style="width:${pct}%;background:${isPaid?'var(--green)':col}"></div></div>
+      <div class="camt" style="opacity:${isZero?0.4:1};color:${isPaid?'var(--green)':''}">
+        ${isZero?'$0':fmt(v)}
+      </div>
       <div class="acts swipe-actions" id="acts_${k}">
         <button class="xbtn" onclick="editG('${k}',${isC})">editar</button>
         <button class="xbtn" onclick="addComment('${k}','${lbl.replace(/'/g,"\'")}')">💬</button>
+        <button class="xbtn" onclick="editClientNum('${k}','${lbl.replace(/'/g,"\'")}')">🔢</button>
       </div>
     </div>`;
   }).join(''):`<div class="empty">Sin gastos — toca editar para agregar montos</div>`;
@@ -809,7 +872,7 @@ function renderD(d){
 function renderComp(d,prev){
   const t=tot(d),pt=prev?tot(prev):0,df=t-pt,pct=pt?Math.round(Math.abs(df)/pt*100):0;
   const pl=prev?MF[prev.m-1]+' '+prev.y:'mes anterior';
-  document.getElementById('compHeader').innerHTML=`<div class="met-l">Variación vs ${pl}</div><div class="met-v" style="color:${df>0?'var(--red)':df<0?'var(--green)':'var(--amber)'}">${df>0?'+':''}${fmt(df)}</div><div class="met-s">${df===0?'Sin cambio':df>0?`▲ ${pct}% más`:` ▼ ${pct}% menos`}</div>`;
+  document.getElementById('compHeader').innerHTML=`<div class="met-l">Variación vs ${pl}</div><div class="met-v" style="color:${df>0?'var(--red)':df<0?'var(--green)':'var(--amber)'}">${df>0?'+':''}${fmt(df)}</div><div class="met-s">${df===0?'Sin cambio':df>0?'▲ '+pct+'% más':'▼ '+pct+'% menos'}</div>`;
   if(!prev){document.getElementById('compList').innerHTML='<div class="empty">No hay mes anterior para comparar</div>';return;}
   const ks=new Set([...Object.keys(d.cats),...Object.keys(prev.cats)]);
   const rows=[];ks.forEach(k=>{const c=d.cats[k]||0,p=prev.cats[k]||0;if(c||p)rows.push({k,c,p,d:c-p});});
@@ -838,6 +901,22 @@ function renderPie(d){
 }
 
 function renderSplit(){
+  const d=S.data[ci];
+  const allCats=Object.entries(d.cats);
+  const paidCount=allCats.filter(([k])=>S.paid&&S.paid[mk(d)+'_'+k+'_paid']).length;
+  const total=allCats.length;
+  const pct=total?Math.round(paidCount/total*100):0;
+  document.getElementById('paidSummary').innerHTML=`
+    <div style="padding:12px 13px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <span style="font-size:12px;color:var(--text2);">${paidCount} de ${total} gastos confirmados</span>
+        <span style="font-size:12px;font-weight:600;color:${pct===100?'var(--green)':'var(--text)'};">${pct}%</span>
+      </div>
+      <div style="height:6px;background:var(--bg3);border-radius:3px;overflow:hidden;">
+        <div style="height:100%;width:${pct}%;background:${pct===100?'var(--green)':'var(--accent)'};border-radius:3px;transition:width .4s;"></div>
+      </div>
+      ${pct===100?'<div style="font-size:11px;color:var(--green);margin-top:8px;text-align:center;">✅ Todos los gastos de '+MF[d.m-1]+' confirmados</div>':''}
+    </div>`;
   document.getElementById('cuentasList').innerHTML=S.cuentas.length?S.cuentas.map(c=>`<div class="crow"><div class="cdot" style="background:${c.color}"></div><div class="cinfo"><div class="cname">${c.label}</div><div class="cnote">${c.cuenta}</div></div><div class="camt">${fmt(c.monto)}</div><div class="acts"><button class="xbtn" onclick="editC('${c.id}')">editar</button><button class="xbtn red" onclick="delC('${c.id}')">✕</button></div></div>`).join(''):`<div class="empty">Sin cuentas adicionales</div>`;
 }
 
@@ -871,6 +950,22 @@ function renderAj(){
   if(be)be.className='btn '+(who==='Erick'?'btn-p':'btn-s');
   if(bf)bf.className='btn '+(who==='Fran'?'btn-p':'btn-s');
   document.getElementById('namesList').innerHTML=Object.entries(S.cats).map(([k,def])=>`<div class="crow"><div class="cdot" style="background:${def.color}"></div><div class="cinfo"><div class="cname">${def.label}</div></div><div class="acts"><button class="xbtn" onclick="renG('${k}')">renombrar</button></div></div>`).join('');
+  const nums=S.clientNums||{};
+  document.getElementById('clientNumsList').innerHTML=Object.entries(S.cats).map(([k,def])=>{
+    const num=nums[k]||'';
+    return `<div class="crow">
+      <div class="cdot" style="background:${def.color}"></div>
+      <div class="cinfo">
+        <div class="cname">${def.label}</div>
+        ${num?'<div class="cnote">🔢 '+num+'</div>':'<div class="cnote" style="color:var(--text3)">Sin número registrado</div>'}
+      </div>
+      <div class="acts">
+        <button class="xbtn" onclick="editClientNum('${k}','${def.label}')">
+          ${num?'editar':'+ agregar'}
+        </button>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 // ── EDIT HELPERS ─────────────────────────────────────────
