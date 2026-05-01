@@ -467,14 +467,8 @@ async function fbGet(path) {
     return await r.json();
   } catch(e) { return null; }
 }
-const FB_SECRET = 'casaEF_erick_fran_2024';
-
 async function fbSet(path, data) {
   try {
-    // Inject secret into data so Firebase rules can validate it
-    if (typeof data === 'object' && data !== null) {
-      data.secret = FB_SECRET;
-    }
     const r = await fetch(FB + path + '.json', {
       method: 'PUT',
       headers: {'Content-Type':'application/json'},
@@ -483,6 +477,7 @@ async function fbSet(path, data) {
     return r.ok;
   } catch(e) { return false; }
 }
+
 
 function setSyncUI(type, msg) {
   ['sdot','sdot2'].forEach(function(id) {
@@ -507,7 +502,17 @@ async function save() {
     myLastSave = ts; remoteLastSave = ts;
     setSyncUI('ok', 'Sincronizado · ' + new Date().toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'}));
   } else {
-    setSyncUI('err', 'Error al sincronizar');
+    setSyncUI('err', 'Error — reintentando...');
+    // Retry once after 2 seconds
+    setTimeout(async function() {
+      var retry = await fbSet('/casaEF', Object.assign({}, S, {updatedAt: ts}));
+      if (retry) {
+        myLastSave = ts; remoteLastSave = ts;
+        setSyncUI('ok', 'Sincronizado');
+      } else {
+        setSyncUI('err', 'Sin conexión — guardado local');
+      }
+    }, 2000);
   }
 }
 
