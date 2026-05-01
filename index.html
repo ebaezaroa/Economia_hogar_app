@@ -491,37 +491,44 @@ function setSyncUI(type, msg) {
 async function save() {
   setSyncUI('spin', 'Guardando...');
   var ts = Date.now();
-  var ok = await fbSet('/casaEF', {
+  // Optimistically set myLastSave BEFORE sending
+  // This prevents pollRemote from overwriting while we're saving
+  myLastSave = ts;
+  var payload = {
     data: S.data, cats: S.cats, cuentas: S.cuentas,
     vars: S.vars, paid: S.paid, comments: S.comments,
     clientNums: S.clientNums, history: S.history,
     remDay: S.remDay, whoAmI: S.whoAmI, lightMode: S.lightMode,
     updatedAt: ts
-  });
+  };
+  var ok = await fbSet('/casaEF', payload);
   if (ok) {
-    myLastSave = ts; remoteLastSave = ts;
+    remoteLastSave = ts;
     setSyncUI('ok', 'Sincronizado · ' + new Date().toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'}));
   } else {
+    // Reset myLastSave so we know local is ahead
+    myLastSave = ts + 999999;
     setSyncUI('err', 'Error — reintentando...');
-    // Retry once after 2 seconds
     setTimeout(async function() {
-      var retry = await fbSet('/casaEF', Object.assign({}, S, {updatedAt: ts}));
+      var retry = await fbSet('/casaEF', payload);
       if (retry) {
         myLastSave = ts; remoteLastSave = ts;
         setSyncUI('ok', 'Sincronizado');
       } else {
-        setSyncUI('err', 'Sin conexión — guardado local');
+        setSyncUI('err', 'Sin conexión');
       }
-    }, 2000);
+    }, 3000);
   }
 }
 
 async function pollRemote() {
+  // Don't poll if we recently saved (within 5 seconds)
+  if (Date.now() - myLastSave < 5000) return;
   var remote = await fbGet('/casaEF');
   if (!remote || !remote.data) return;
   var rts = remote.updatedAt || 0;
-  if (rts > myLastSave) {
-    var prevTot = tot(S.data[ci]);
+  // Only update if remote is strictly newer than our last save
+  if (rts > remoteLastSave && rts > myLastSave) {
     S = {
       data: remote.data || S.data,
       cats: remote.cats || S.cats,
@@ -532,84 +539,15 @@ async function pollRemote() {
       clientNums: remote.clientNums || {},
       history: remote.history || [],
       remDay: remote.remDay || 25,
-      whoAmI: S.whoAmI, // keep local who
-      lightMode: S.lightMode, // keep local theme
-      updatedAt: rts
+      whoAmI: S.whoAmI,
+      lightMode: S.lightMode
     };
-    myLastSave = rts; remoteLastSave = rts;
+    remoteLastSave = rts;
     if (ci >= S.data.length) ci = S.data.length - 1;
     setSyncUI('ok', 'Sincronizado · ' + new Date().toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'}));
     showNotif('🔄 Datos actualizados');
     render(); checkRem();
   }
-}
-
-function migrateMonths(data) {
-  return data.map(function(d) {
-    var m = d.m - 1;
-    var y = d.y;
-    if (m === 0) { m = 12; y = y - 1; }
-    return { y: y, m: m, cats: d.cats };
-  });
-}
-
-function needsMigration(data) {
-  // Check if any month needs to be shifted back
-  // We know the last real month should be April 2026
-  // If last month is May 2026 or June 2026, needs migration
-  if (!data || !data.length) return false;
-  var last = data[data.length - 1];
-  return (last.y === 2026 && (last.m === 5 || last.m === 6));
-}
-
-async function init() {
-  setSyncUI('spin', 'Conectando...');
-  var remote = await fbGet('/casaEF');
-  if (remote && remote.data) {
-    var data = remote.data;
-    // Force migration if months are off - check v3 flag
-    if (needsMigration(data) && !remote.migrated_v3) {
-      setSyncUI('spin', 'Corrigiendo meses...');
-      data = migrateMonths(data);
-      var migratedPayload = {
-        data: data,
-        cats: remote.cats,
-        cuentas: remote.cuentas || [],
-        vars: remote.vars || {},
-        paid: remote.paid || {},
-        comments: remote.comments || {},
-        clientNums: remote.clientNums || {},
-        history: remote.history || [],
-        remDay: remote.remDay || 25,
-        migrated_v2: true,
-        migrated_v3: true,
-        updatedAt: Date.now()
-      };
-      await fbSet('/casaEF', migratedPayload);
-      remote = migratedPayload;
-      toast('✅ Meses corregidos');
-    }
-    S.data = data;
-    S.cats = remote.cats || S.cats;
-    S.cuentas = remote.cuentas || [];
-    S.vars = remote.vars || {};
-    S.paid = remote.paid || {};
-    S.comments = remote.comments || {};
-    S.clientNums = remote.clientNums || {};
-    S.history = remote.history || [];
-    S.remDay = remote.remDay || 25;
-    myLastSave = remote.updatedAt || 0;
-    remoteLastSave = myLastSave;
-    setSyncUI('ok', 'Sincronizado');
-  } else {
-    await save();
-  }
-  ci = S.data.length - 1;
-  document.getElementById('loadingScreen').classList.add('hide');
-  applyTheme();
-  checkRem();
-  render();
-  pollInterval = setInterval(pollRemote, 8000);
 }
 
 // ── HELPERS ──────────────────────────────────────────────
@@ -1331,6 +1269,63 @@ function resetAll() {
   };
   ci = S.data.length - 1;
   save(); toast('Datos restablecidos'); render();
+}
+
+// ── MIGRATION ────────────────────────────────────────────
+function migrateMonths(data) {
+  return data.map(function(d) {
+    var m = d.m - 1, y = d.y;
+    if (m === 0) { m = 12; y = y - 1; }
+    return { y:y, m:m, cats:d.cats };
+  });
+}
+function needsMigration(data) {
+  if (!data || !data.length) return false;
+  var last = data[data.length-1];
+  return (last.y === 2026 && (last.m === 5 || last.m === 6));
+}
+
+// ── INIT ─────────────────────────────────────────────────
+async function init() {
+  setSyncUI('spin', 'Conectando...');
+  var remote = await fbGet('/casaEF');
+  if (remote && remote.data) {
+    var data = remote.data;
+    if (needsMigration(data) && !remote.migrated_v3) {
+      setSyncUI('spin', 'Corrigiendo meses...');
+      data = migrateMonths(data);
+      var mp = {
+        data:data, cats:remote.cats, cuentas:remote.cuentas||[],
+        vars:remote.vars||{}, paid:remote.paid||{},
+        comments:remote.comments||{}, clientNums:remote.clientNums||{},
+        history:remote.history||[], remDay:remote.remDay||25,
+        whoAmI:remote.whoAmI||'Erick', lightMode:remote.lightMode||false,
+        migrated_v3:true, updatedAt:Date.now()
+      };
+      await fbSet('/casaEF', mp);
+      remote = mp;
+    }
+    S.data = data;
+    S.cats = remote.cats || S.cats;
+    S.cuentas = remote.cuentas || [];
+    S.vars = remote.vars || {};
+    S.paid = remote.paid || {};
+    S.comments = remote.comments || {};
+    S.clientNums = remote.clientNums || {};
+    S.history = remote.history || [];
+    S.remDay = remote.remDay || 25;
+    myLastSave = remote.updatedAt || 0;
+    remoteLastSave = myLastSave;
+    setSyncUI('ok', 'Sincronizado');
+  } else {
+    await save();
+  }
+  ci = S.data.length - 1;
+  document.getElementById('loadingScreen').classList.add('hide');
+  applyTheme();
+  checkRem();
+  render();
+  pollInterval = setInterval(pollRemote, 8000);
 }
 
 // ── START ────────────────────────────────────────────────
