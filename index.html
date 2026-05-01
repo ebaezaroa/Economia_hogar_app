@@ -177,10 +177,10 @@ input[type=color] { padding:3px; height:34px; cursor:pointer; }
 /* MODAL */
 .modal-bg { display:none; position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:100; align-items:flex-end; justify-content:center; backdrop-filter:blur(4px); }
 .modal-bg.on { display:flex; }
-.modal { background:var(--bg2); border:0.5px solid var(--border2); border-radius:20px 20px 0 0; padding:20px 20px calc(env(safe-area-inset-bottom,0px)+20px); width:100%; max-width:430px; }
-.modal-handle { width:36px; height:4px; background:var(--border2); border-radius:2px; margin:0 auto 16px; }
-.modal-title { font-size:16px; font-weight:700; margin-bottom:14px; }
-.modal-fields { display:flex; flex-direction:column; gap:8px; margin-bottom:14px; }
+.modal { background:var(--bg2); border:0.5px solid var(--border2); border-radius:24px 24px 0 0; padding:8px 24px calc(env(safe-area-inset-bottom,0px)+24px); width:100%; max-width:430px; }
+.modal-handle { width:40px; height:4px; background:var(--border2); border-radius:2px; margin:0 auto 24px; }
+.modal-title { font-size:17px; font-weight:700; margin-bottom:16px; }
+.modal-fields { display:flex; flex-direction:column; gap:8px; margin-bottom:16px; }
 .modal-actions { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
 
 /* NOTIF + TOAST */
@@ -408,39 +408,39 @@ const DC = {
 };
 
 const RAW = [
-  {y:2023,m:9,cats:{propital:60166,pie:600000,abono:124340,mesa:59990,refrigerador:329990,iluminacion:62930,creditoFran:121013}},
+  {y:2023,m:8,cats:{propital:60166,pie:600000,abono:124340,mesa:59990,refrigerador:329990,iluminacion:62930,creditoFran:121013}},
+  {y:2023,m:9,cats:{propital:60166,pie:600000,abono:124340,creditoFran:121013}},
   {y:2023,m:10,cats:{propital:60166,pie:600000,abono:124340,creditoFran:121013}},
   {y:2023,m:11,cats:{propital:60166,pie:600000,abono:124340,creditoFran:121013}},
   {y:2023,m:12,cats:{propital:60166,pie:600000,abono:124340,creditoFran:121013}},
   {y:2024,m:1,cats:{propital:60166,pie:600000,abono:124340,creditoFran:121013}},
-  {y:2024,m:2,cats:{propital:60166,pie:600000,abono:124340,creditoFran:121013}},
-  {y:2024,m:3,cats:{propital:60166,arriendo:760000,electricidad:29344,agua:7800,pie:600000,creditoFran:121013}},
-  {y:2024,m:4,cats:{arriendo:760000,electricidad:75105,gas:25900,internet:30394,pie:600000,creditoFran:121013,leonAuto:114800}},
-  {y:2024,m:5,cats:{arriendo:760000,electricidad:76118,agua:28000,gas:25900,internet:30394,creditoFran:121013,leonAuto:114800}},
-  {y:2024,m:6,cats:{arriendo:760000,electricidad:156000,agua:27663,gas:25900,internet:30394,creditoFran:121013,leonAuto:114800}},
-  {y:2024,m:7,cats:{arriendo:760000,electricidad:116807,agua:29068,gas:25900,internet:21990,creditoFran:121013,leonAuto:114800}},
-  {y:2024,m:8,cats:{arriendo:760000,electricidad:123601,agua:27000,gas:21900,internet:21990,leonAuto:114800,auto:150000}},
-  {y:2024,m:9,cats:{arriendo:794960,electricidad:66521,agua:39054,gas:21900,internet:21990,leonAuto:114800,auto:150000}},
-  {y:2024,m:10,cats:{arriendo:777480,electricidad:78666,agua:30832,gas:23500,internet:21087,leonAuto:114800,auto:150000}},
-  {y:2024,m:11,cats:{arriendo:777480,electricidad:78413,agua:56704,gas:43000,internet:22309,leonAuto:114800,auto:150000}},
-  {y:2024,m:12,cats:{arriendo:777480,electricidad:82951,agua:67000,gas:25900,internet:28396,leonAuto:114800,auto:150000}},
-  {y:2025,m:1,cats:{arriendo:777480,electricidad:63504,agua:29571,internet:20638,leonAuto:114800,auto:150000}},
-  {y:2025,m:2,cats:{arriendo:220000,electricidad:22600,agua:25300,gas:21800,internet:6000,auto:150000}},
-  {y:2025,m:3,cats:{arriendo:550000,electricidad:25300,agua:20700,gas:22000,internet:22990}},
-  {y:2025,m:4,cats:{arriendo:550000,electricidad:28300,agua:25300,gas:42800,internet:22990}},
-  {y:2025,m:5,cats:{arriendo:550000,electricidad:65100,agua:23000,gas:32450,internet:22990}},
-  {y:2025,m:6,cats:{arriendo:550000,electricidad:63800,agua:29900,gas:42500,internet:22990}},
-  {y:2025,m:7,cats:{arriendo:550000,electricidad:75000,agua:29900,gas:43000,internet:22990}},
-  {y:2025,m:8,cats:{arriendo:550000,electricidad:63500,agua:29900,gas:43000,internet:32990}},
-  {y:2025,m:9,cats:{arriendo:550000,electricidad:50600,agua:30000,gas:42850,internet:32990}},
-  {y:2025,m:10,cats:{arriendo:550000,electricidad:42300,agua:27600,gas:42550,internet:32990}},
-  {y:2025,m:11,cats:{arriendo:550000,electricidad:31800,agua:28000,gas:42850,internet:33270}},
-  {y:2025,m:12,cats:{arriendo:550000,electricidad:32800,agua:28000,gas:38000,internet:33270,cocina:95484,remodelacion:1800}},
-  {y:2026,m:1,cats:{arriendo:550000,electricidad:32600,agua:32200,gas:27300,internet:33270,cocina:95484,remodelacion:724618}},
-  {y:2026,m:2,cats:{arriendo:550000,electricidad:30400,agua:29900,gas:32450,internet:33531,cocina:95484,dividendo:546545,remodelacion:724618}},
-  {y:2026,m:3,cats:{arriendo:550000,electricidad:29100,agua:23000,gas:37550,internet:33270,cocina:95484,dividendo:466802,remodelacion:724618}},
+  {y:2024,m:2,cats:{propital:60166,arriendo:760000,electricidad:29344,agua:7800,pie:600000,creditoFran:121013}},
+  {y:2024,m:3,cats:{arriendo:760000,electricidad:75105,gas:25900,internet:30394,pie:600000,creditoFran:121013,leonAuto:114800}},
+  {y:2024,m:4,cats:{arriendo:760000,electricidad:76118,agua:28000,gas:25900,internet:30394,creditoFran:121013,leonAuto:114800}},
+  {y:2024,m:5,cats:{arriendo:760000,electricidad:156000,agua:27663,gas:25900,internet:30394,creditoFran:121013,leonAuto:114800}},
+  {y:2024,m:6,cats:{arriendo:760000,electricidad:116807,agua:29068,gas:25900,internet:21990,creditoFran:121013,leonAuto:114800}},
+  {y:2024,m:7,cats:{arriendo:760000,electricidad:123601,agua:27000,gas:21900,internet:21990,leonAuto:114800,auto:150000}},
+  {y:2024,m:8,cats:{arriendo:794960,electricidad:66521,agua:39054,gas:21900,internet:21990,leonAuto:114800,auto:150000}},
+  {y:2024,m:9,cats:{arriendo:777480,electricidad:78666,agua:30832,gas:23500,internet:21087,leonAuto:114800,auto:150000}},
+  {y:2024,m:10,cats:{arriendo:777480,electricidad:78413,agua:56704,gas:43000,internet:22309,leonAuto:114800,auto:150000}},
+  {y:2024,m:11,cats:{arriendo:777480,electricidad:82951,agua:67000,gas:25900,internet:28396,leonAuto:114800,auto:150000}},
+  {y:2024,m:12,cats:{arriendo:777480,electricidad:63504,agua:29571,internet:20638,leonAuto:114800,auto:150000}},
+  {y:2025,m:1,cats:{arriendo:220000,electricidad:22600,agua:25300,gas:21800,internet:6000,auto:150000}},
+  {y:2025,m:2,cats:{arriendo:550000,electricidad:25300,agua:20700,gas:22000,internet:22990}},
+  {y:2025,m:3,cats:{arriendo:550000,electricidad:28300,agua:25300,gas:42800,internet:22990}},
+  {y:2025,m:4,cats:{arriendo:550000,electricidad:65100,agua:23000,gas:32450,internet:22990}},
+  {y:2025,m:5,cats:{arriendo:550000,electricidad:63800,agua:29900,gas:42500,internet:22990}},
+  {y:2025,m:6,cats:{arriendo:550000,electricidad:75000,agua:29900,gas:43000,internet:22990}},
+  {y:2025,m:7,cats:{arriendo:550000,electricidad:63500,agua:29900,gas:43000,internet:32990}},
+  {y:2025,m:8,cats:{arriendo:550000,electricidad:50600,agua:30000,gas:42850,internet:32990}},
+  {y:2025,m:9,cats:{arriendo:550000,electricidad:42300,agua:27600,gas:42550,internet:32990}},
+  {y:2025,m:10,cats:{arriendo:550000,electricidad:31800,agua:28000,gas:42850,internet:33270}},
+  {y:2025,m:11,cats:{arriendo:550000,electricidad:32800,agua:28000,gas:38000,internet:33270,cocina:95484,remodelacion:1800}},
+  {y:2025,m:12,cats:{arriendo:550000,electricidad:32600,agua:32200,gas:27300,internet:33270,cocina:95484,remodelacion:724618}},
+  {y:2026,m:1,cats:{arriendo:550000,electricidad:30400,agua:29900,gas:32450,internet:33531,cocina:95484,dividendo:546545,remodelacion:724618}},
+  {y:2026,m:2,cats:{arriendo:550000,electricidad:29100,agua:23000,gas:37550,internet:33270,cocina:95484,dividendo:466802,remodelacion:724618}},
+  {y:2026,m:3,cats:{electricidad:42000,agua:28000,gas:42000,internet:33270,cocina:95484,dividendo:466900,remodelacion:724618}},
   {y:2026,m:4,cats:{electricidad:42000,agua:28000,gas:42000,internet:33270,cocina:95484,dividendo:466900,remodelacion:724618}},
-  {y:2026,m:5,cats:{electricidad:42000,agua:28000,gas:42000,internet:33270,cocina:95484,dividendo:466900,remodelacion:724618}},
 ];
 
 // ── STATE ────────────────────────────────────────────────
@@ -920,9 +920,12 @@ function editG(k, isC) {
   var ec = isC ? S.cuentas.find(function(c){return c.id===ecId;}) : null;
   var curLbl = isC ? ec.label : (S.cats[k] ? S.cats[k].label : k);
   var curVal = isC ? ec.monto : (d.cats[k] || 0);
+  var deleteBtn = !isC ? '<button type="button" id="delCatBtn" class="btn btn-danger" style="width:100%;margin-top:4px;font-size:11px;">🗑 Eliminar este gasto del mes</button>' : '';
+  var _delKey = k;
   openM('Editar gasto',
     '<div><div class="flabel">Nombre</div><input id="eN" value="'+curLbl+'"/></div>' +
-    '<div><div class="flabel">Monto ($)</div><input id="eV" type="number" value="'+curVal+'"/></div>',
+    '<div><div class="flabel">Monto ($)</div><input id="eV" type="number" value="'+curVal+'"/></div>' +
+    deleteBtn,
     function() {
       var n = document.getElementById('eN').value.trim();
       var v = parseFloat(document.getElementById('eV').value) || 0;
@@ -936,6 +939,25 @@ function editG(k, isC) {
       closeM(); save(); toast('Guardado ✓'); render();
     }
   );
+  if (!isC) {
+    setTimeout(function() {
+      var btn = document.getElementById('delCatBtn');
+      if (btn) btn.addEventListener('click', function(){ deleteCatFromMonth(_delKey); });
+    }, 50);
+  }
+}
+
+function deleteCatFromMonth(k) {
+  var d = S.data[ci];
+  var lbl = S.cats[k] ? S.cats[k].label : k;
+  if (!confirm('¿Eliminar "' + lbl + '" de ' + MF[d.m-1] + ' ' + d.y + '? Solo se borra de este mes.')) return;
+  delete d.cats[k];
+  // also clean paid/comments for this cat this month
+  var mk2 = mk(d);
+  delete S.paid[mk2 + '_' + k + '_paid'];
+  delete S.comments[mk2 + '_' + k];
+  addHist(S.whoAmI||'Erick', 'eliminó gasto', lbl + ' de ' + MF[d.m-1]);
+  closeM(); save(); toast(lbl + ' eliminado del mes'); render();
 }
 
 // ── VARS ─────────────────────────────────────────────────
