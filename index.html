@@ -538,7 +538,6 @@ async function pollRemote() {
 }
 
 function migrateMonths(data) {
-  // Shift all months back by 1 if not yet migrated
   return data.map(function(d) {
     var m = d.m - 1;
     var y = d.y;
@@ -547,24 +546,41 @@ function migrateMonths(data) {
   });
 }
 
+function needsMigration(data) {
+  // Check if any month needs to be shifted back
+  // We know the last real month should be April 2026
+  // If last month is May 2026 or June 2026, needs migration
+  if (!data || !data.length) return false;
+  var last = data[data.length - 1];
+  return (last.y === 2026 && (last.m === 5 || last.m === 6));
+}
+
 async function init() {
   setSyncUI('spin', 'Conectando...');
   var remote = await fbGet('/casaEF');
   if (remote && remote.data) {
     var data = remote.data;
-    // Auto-migrate: if last month is May 2026, shift back to April 2026
-    var last = data[data.length - 1];
-    if (last && last.y === 2026 && last.m === 5 && !remote.migrated_v2) {
+    // Force migration if months are off - check v3 flag
+    if (needsMigration(data) && !remote.migrated_v3) {
       setSyncUI('spin', 'Corrigiendo meses...');
       data = migrateMonths(data);
-      remote.data = data;
-      remote.migrated_v2 = true;
-      await fbSet('/casaEF', Object.assign({}, remote, {
+      var migratedPayload = {
         data: data,
+        cats: remote.cats,
+        cuentas: remote.cuentas || [],
+        vars: remote.vars || {},
+        paid: remote.paid || {},
+        comments: remote.comments || {},
+        clientNums: remote.clientNums || {},
+        history: remote.history || [],
+        remDay: remote.remDay || 25,
         migrated_v2: true,
+        migrated_v3: true,
         updatedAt: Date.now()
-      }));
-      toast('Meses corregidos ✓');
+      };
+      await fbSet('/casaEF', migratedPayload);
+      remote = migratedPayload;
+      toast('✅ Meses corregidos');
     }
     S.data = data;
     S.cats = remote.cats || S.cats;
