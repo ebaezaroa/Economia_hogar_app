@@ -496,9 +496,6 @@ function setSyncUI(type, msg) {
 async function save() {
   setSyncUI('spin', 'Guardando...');
   var ts = Date.now();
-  // Optimistically set myLastSave BEFORE sending
-  // This prevents pollRemote from overwriting while we're saving
-  myLastSave = ts;
   var payload = {
     data: S.data, cats: S.cats, cuentas: S.cuentas,
     vars: S.vars, paid: S.paid, comments: S.comments,
@@ -506,52 +503,42 @@ async function save() {
     remDay: S.remDay, whoAmI: S.whoAmI, lightMode: S.lightMode,
     updatedAt: ts
   };
+  // Stop polling while saving to avoid race condition
+  if (pollInterval) { clearInterval(pollInterval); pollInterval = null; }
   var ok = await fbSet('/casaEF', payload);
   if (ok) {
+    myLastSave = ts;
     remoteLastSave = ts;
-    setSyncUI('ok', 'Sincronizado · ' + new Date().toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'}));
-    console.log('Save OK, ts:', ts);
+    setSyncUI('ok', 'Guardado · ' + new Date().toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'}));
   } else {
-    myLastSave = ts + 999999;
-    setSyncUI('err', 'Error — reintentando...');
-    console.log('Save FAILED');
-    setTimeout(async function() {
-      var retry = await fbSet('/casaEF', payload);
-      if (retry) {
-        myLastSave = ts; remoteLastSave = ts;
-        setSyncUI('ok', 'Sincronizado');
-      } else {
-        setSyncUI('err', 'Sin conexión');
-      }
-    }, 3000);
+    setSyncUI('err', 'Error al guardar');
   }
+  // Restart polling after 5 seconds
+  setTimeout(function() {
+    if (!pollInterval) pollInterval = setInterval(pollRemote, 10000);
+  }, 5000);
 }
 
 async function pollRemote() {
-  // Don't poll if we recently saved (within 5 seconds)
-  if (Date.now() - myLastSave < 5000) return;
   var remote = await fbGet('/casaEF');
   if (!remote || !remote.data) return;
   var rts = remote.updatedAt || 0;
-  // Only update if remote is strictly newer than our last save
-  if (rts > remoteLastSave && rts > myLastSave) {
-    S = {
-      data: remote.data || S.data,
-      cats: remote.cats || S.cats,
-      cuentas: remote.cuentas || [],
-      vars: remote.vars || {},
-      paid: remote.paid || {},
-      comments: remote.comments || {},
-      clientNums: remote.clientNums || {},
-      history: remote.history || [],
-      remDay: remote.remDay || 25,
-      whoAmI: S.whoAmI,
-      lightMode: S.lightMode
-    };
+  // Only update if remote is newer than what we last saved
+  if (rts > myLastSave) {
+    S.data = remote.data;
+    S.cats = remote.cats || S.cats;
+    S.cuentas = remote.cuentas || [];
+    S.vars = remote.vars || {};
+    S.paid = remote.paid || {};
+    S.comments = remote.comments || {};
+    S.clientNums = remote.clientNums || {};
+    S.history = remote.history || [];
+    S.remDay = remote.remDay || 25;
+    myLastSave = rts;
     remoteLastSave = rts;
     if (ci >= S.data.length) ci = S.data.length - 1;
-    setSyncUI('ok', 'Sincronizado · ' + new Date().toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'}));
-    showNotif('🔄 Datos actualizados');
+    setSyncUI('ok', 'Actualizado · ' + new Date().toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'}));
+    showNotif('🔄 Datos actualizados por Fran');
     render(); checkRem();
   }
 }
