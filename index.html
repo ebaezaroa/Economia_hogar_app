@@ -207,7 +207,7 @@ input[type=color] { padding:3px; height:34px; cursor:pointer; }
   <div class="hdr-inner">
     <div>
       <div class="hdr-title">Casa Erick &amp; Fran 🏠</div>
-      <div style="font-size:9px;color:var(--text3);">v4.2</div>
+      <div style="font-size:9px;color:var(--text3);">v4.4</div>
       <div class="hdr-sub"><div class="sdot" id="sdot"></div><span id="stxt">Conectando...</span></div>
     </div>
     <div class="avs"><div class="av av-e">ER</div><div class="av av-f">FR</div></div>
@@ -443,7 +443,8 @@ const RAW = [
   {y:2026,m:1,cats:{arriendo:550000,electricidad:30400,agua:29900,gas:32450,internet:33531,cocina:95484,dividendo:546545,remodelacion:724618}},
   {y:2026,m:2,cats:{arriendo:550000,electricidad:29100,agua:23000,gas:37550,internet:33270,cocina:95484,dividendo:466802,remodelacion:724618}},
   {y:2026,m:3,cats:{electricidad:42000,agua:28000,gas:42000,internet:33270,cocina:95484,dividendo:466900,remodelacion:724618}},
-  {y:2026,m:4,cats:{electricidad:42000,agua:28000,gas:42000,internet:33270,cocina:95484,dividendo:466900,remodelacion:724618}},
+  {y:2026,m:4,cats:{electricidad:18900,agua:11750,gas:0,internet:18900,dividendo:469884,remodelacion:724618}},
+  {y:2026,m:5,cats:{electricidad:18900,agua:11750,gas:0,internet:18900,dividendo:469884,remodelacion:724618}},
 ];
 
 // ── STATE ────────────────────────────────────────────────
@@ -513,10 +514,7 @@ async function save() {
   } else {
     setSyncUI('err', 'Error al guardar');
   }
-  // Restart polling after 5 seconds
-  setTimeout(function() {
-    if (!pollInterval) pollInterval = setInterval(pollRemote, 10000);
-  }, 5000);
+  // Polling disabled
 }
 
 async function pollRemote() {
@@ -1322,7 +1320,14 @@ async function init() {
 }
 
 // ── START ────────────────────────────────────────────────
-console.log("Casa EF v4.2 loaded");
+console.log("Casa EF v4.4 loaded");
+// Sync when app becomes visible (user opens from background)
+document.addEventListener('visibilitychange', function() {
+  if (!document.hidden) {
+    console.log('App visible - syncing from Firebase');
+    pollRemote();
+  }
+});
 init();
 </script>
 </body>
