@@ -207,7 +207,7 @@ input[type=color] { padding:3px; height:34px; cursor:pointer; }
   <div class="hdr-inner">
     <div>
       <div class="hdr-title">Casa Erick &amp; Fran 🏠</div>
-      <div style="font-size:9px;color:var(--text3);">v4.5</div>
+      <div style="font-size:9px;color:var(--text3);">v4.5 · <span id="mCount">-</span> meses</div>
       <div class="hdr-sub"><div class="sdot" id="sdot"></div><span id="stxt">Conectando...</span></div>
     </div>
     <div class="avs"><div class="av av-e">ER</div><div class="av av-f">FR</div></div>
@@ -504,18 +504,26 @@ async function save() {
     remDay: S.remDay, whoAmI: S.whoAmI, lightMode: S.lightMode,
     updatedAt: ts
   };
-  // Stop polling while saving to avoid race condition
-  if (pollInterval) { clearInterval(pollInterval); pollInterval = null; }
+  // Save to localStorage immediately (no network needed)
+  try {
+    localStorage.setItem('casaEF_local', JSON.stringify(payload));
+    localStorage.setItem('casaEF_localTs', String(ts));
+  } catch(e) { console.log('localStorage error:', e); }
+  myLastSave = ts;
+  // Save to Firebase
   var ok = await fbSet('/casaEF', payload);
   if (ok) {
-    myLastSave = ts;
     remoteLastSave = ts;
     setSyncUI('ok', 'Guardado · ' + new Date().toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'}));
   } else {
-    setSyncUI('err', 'Error al guardar');
+    setSyncUI('err', 'Guardado local · reintentando...');
+    setTimeout(async function() {
+      var retry = await fbSet('/casaEF', payload);
+      if (retry) { remoteLastSave = ts; setSyncUI('ok', 'Sincronizado'); }
+    }, 3000);
   }
-
 }
+
 
 async function pollRemote() {
   // Disabled - no background sync to prevent overwriting local changes
@@ -749,6 +757,8 @@ function render() {
          '<span class="pill p-eq">= igual</span>';
   }
   document.getElementById('mDiff').innerHTML = dh;
+  var mc = document.getElementById('mCount');
+  if (mc) mc.textContent = S.data.length;
   if (ct === 'detalle')   renderD(d);
   if (ct === 'comparar')  renderComp(d, prev);
   if (ct === 'torta')     renderPie(d);
@@ -1260,49 +1270,66 @@ function needsMigration(data) {
 // ── INIT ─────────────────────────────────────────────────
 async function init() {
   setSyncUI('spin', 'Conectando...');
+  // Check localStorage first
+  var localTs = 0;
+  var localData = null;
+  try {
+    var lts = localStorage.getItem('casaEF_localTs');
+    var ld = localStorage.getItem('casaEF_local');
+    if (lts && ld) { localTs = parseInt(lts); localData = JSON.parse(ld); }
+  } catch(e) {}
+
   var remote = await fbGet('/casaEF');
-  if (remote && remote.data) {
-    var data = remote.data;
-    if (needsMigration(data) && !remote.migrated_v3) {
-      setSyncUI('spin', 'Corrigiendo meses...');
+  var remoteTs = remote ? (remote.updatedAt || 0) : 0;
+  console.log('localStorage ts:', localTs, 'Firebase ts:', remoteTs);
+
+  // Use whichever is newer
+  var source = null;
+  if (localData && localTs >= remoteTs) {
+    source = localData;
+    console.log('Using localStorage');
+    setSyncUI('ok', 'Cargado');
+    // Push to Firebase in background
+    setTimeout(async function() {
+      var ok = await fbSet('/casaEF', localData);
+      if (ok) { remoteLastSave = localTs; setSyncUI('ok', 'Sincronizado'); }
+    }, 1000);
+  } else if (remote && remote.data) {
+    source = remote;
+    console.log('Using Firebase');
+    setSyncUI('ok', 'Sincronizado');
+  }
+
+  if (source) {
+    var data = source.data;
+    if (needsMigration(data) && !source.migrated_v3) {
       data = migrateMonths(data);
-      var mp = {
-        data:data, cats:remote.cats, cuentas:remote.cuentas||[],
-        vars:remote.vars||{}, paid:remote.paid||{},
-        comments:remote.comments||{}, clientNums:remote.clientNums||{},
-        history:remote.history||[], remDay:remote.remDay||25,
-        whoAmI:remote.whoAmI||'Erick', lightMode:remote.lightMode||false,
-        migrated_v3:true, updatedAt:Date.now()
-      };
-      await fbSet('/casaEF', mp);
-      remote = mp;
+      source.data = data; source.migrated_v3 = true; source.updatedAt = Date.now();
+      await fbSet('/casaEF', source);
     }
     S.data = data;
-    S.cats = remote.cats || S.cats;
-    S.cuentas = remote.cuentas || [];
-    S.vars = remote.vars || {};
-    S.paid = remote.paid || {};
-    S.comments = remote.comments || {};
-    S.clientNums = remote.clientNums || {};
-    S.history = remote.history || [];
-    S.remDay = remote.remDay || 25;
-    myLastSave = remote.updatedAt || 0;
-    remoteLastSave = myLastSave;
-    setSyncUI('ok', 'Sincronizado');
-    console.log('Loaded from Firebase, updatedAt:', myLastSave);
+    S.cats = source.cats || S.cats;
+    S.cuentas = source.cuentas || [];
+    S.vars = source.vars || {};
+    S.paid = source.paid || {};
+    S.comments = source.comments || {};
+    S.clientNums = source.clientNums || {};
+    S.history = source.history || [];
+    S.remDay = source.remDay || 25;
+    S.whoAmI = source.whoAmI || S.whoAmI;
+    S.lightMode = source.lightMode || false;
+    myLastSave = Math.max(localTs, remoteTs);
+    remoteLastSave = remoteTs;
   } else {
     await save();
   }
   ci = S.data.length - 1;
   document.getElementById('loadingScreen').classList.add('hide');
-  applyTheme();
-  checkRem();
-  render();
-  pollInterval = setInterval(pollRemote, 8000);
+  applyTheme(); checkRem(); render();
 }
 
 // ── START ────────────────────────────────────────────────
-console.log("Casa EF v4.5 loaded");
+console.log("Casa EF v4.6 loaded");
 // No background sync - saves go directly to Firebase
 init();
 </script>
