@@ -207,7 +207,7 @@ input[type=color] { padding:3px; height:34px; cursor:pointer; }
   <div class="hdr-inner">
     <div>
       <div class="hdr-title">Casa Erick &amp; Fran 🏠</div>
-      <div style="font-size:9px;color:var(--text3);">v4.6 · <span id="mCount">-</span> meses</div>
+      <div style="font-size:9px;color:var(--text3);">v4.7 · <span id="mCount">-</span> meses</div>
       <div class="hdr-sub"><div class="sdot" id="sdot"></div><span id="stxt">Conectando...</span></div>
     </div>
     <div class="avs"><div class="av av-e">ER</div><div class="av av-f">FR</div></div>
@@ -1289,15 +1289,17 @@ async function init() {
     source = localData;
     console.log('Using localStorage');
     setSyncUI('ok', 'Cargado');
-    // Push to Firebase in background
-    setTimeout(async function() {
-      var ok = await fbSet('/casaEF', localData);
-      if (ok) { remoteLastSave = localTs; setSyncUI('ok', 'Sincronizado'); }
-    }, 1000);
+    // Don't push to Firebase on init - only save() should write to Firebase
+    // This prevents timestamp conflicts
   } else if (remote && remote.data) {
     source = remote;
-    console.log('Using Firebase');
+    console.log('Using Firebase ts:', remoteTs);
     setSyncUI('ok', 'Sincronizado');
+    // Update localStorage to match Firebase
+    try {
+      localStorage.setItem('casaEF_local', JSON.stringify(remote));
+      localStorage.setItem('casaEF_localTs', String(remoteTs));
+    } catch(e) {}
   }
 
   if (source) {
@@ -1329,7 +1331,7 @@ async function init() {
 }
 
 // ── START ────────────────────────────────────────────────
-console.log("Casa EF v4.6 loaded");
+console.log("Casa EF v4.7 loaded");
 // No background sync - saves go directly to Firebase
 init();
 </script>
