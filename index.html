@@ -207,6 +207,7 @@ input[type=color] { padding:3px; height:34px; cursor:pointer; }
   <div class="hdr-inner">
     <div>
       <div class="hdr-title">Casa Erick &amp; Fran 🏠</div>
+      <div style="font-size:9px;color:var(--text3);">v4.2</div>
       <div class="hdr-sub"><div class="sdot" id="sdot"></div><span id="stxt">Conectando...</span></div>
     </div>
     <div class="avs"><div class="av av-e">ER</div><div class="av av-f">FR</div></div>
@@ -474,8 +475,12 @@ async function fbSet(path, data) {
       headers: {'Content-Type':'application/json'},
       body: JSON.stringify(data)
     });
+    console.log('fbSet status:', r.status, r.ok);
     return r.ok;
-  } catch(e) { return false; }
+  } catch(e) {
+    console.log('fbSet error:', e.message);
+    return false;
+  }
 }
 
 
@@ -505,10 +510,11 @@ async function save() {
   if (ok) {
     remoteLastSave = ts;
     setSyncUI('ok', 'Sincronizado · ' + new Date().toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'}));
+    console.log('Save OK, ts:', ts);
   } else {
-    // Reset myLastSave so we know local is ahead
     myLastSave = ts + 999999;
     setSyncUI('err', 'Error — reintentando...');
+    console.log('Save FAILED');
     setTimeout(async function() {
       var retry = await fbSet('/casaEF', payload);
       if (retry) {
@@ -1329,6 +1335,7 @@ async function init() {
 }
 
 // ── START ────────────────────────────────────────────────
+console.log("Casa EF v4.2 loaded");
 init();
 </script>
 </body>
