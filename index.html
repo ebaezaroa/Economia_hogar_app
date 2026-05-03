@@ -207,7 +207,7 @@ input[type=color] { padding:3px; height:34px; cursor:pointer; }
   <div class="hdr-inner">
     <div>
       <div class="hdr-title">Casa Erick &amp; Fran 🏠</div>
-      <div style="font-size:9px;color:var(--text3);">v4.4</div>
+      <div style="font-size:9px;color:var(--text3);">v4.5</div>
       <div class="hdr-sub"><div class="sdot" id="sdot"></div><span id="stxt">Conectando...</span></div>
     </div>
     <div class="avs"><div class="av av-e">ER</div><div class="av av-f">FR</div></div>
@@ -514,31 +514,12 @@ async function save() {
   } else {
     setSyncUI('err', 'Error al guardar');
   }
-  // Polling disabled
+
 }
 
 async function pollRemote() {
-  var remote = await fbGet('/casaEF');
-  if (!remote || !remote.data) return;
-  var rts = remote.updatedAt || 0;
-  // Only update if remote is newer than what we last saved
-  if (rts > myLastSave) {
-    S.data = remote.data;
-    S.cats = remote.cats || S.cats;
-    S.cuentas = remote.cuentas || [];
-    S.vars = remote.vars || {};
-    S.paid = remote.paid || {};
-    S.comments = remote.comments || {};
-    S.clientNums = remote.clientNums || {};
-    S.history = remote.history || [];
-    S.remDay = remote.remDay || 25;
-    myLastSave = rts;
-    remoteLastSave = rts;
-    if (ci >= S.data.length) ci = S.data.length - 1;
-    setSyncUI('ok', 'Actualizado · ' + new Date().toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'}));
-    showNotif('🔄 Datos actualizados por Fran');
-    render(); checkRem();
-  }
+  // Disabled - no background sync to prevent overwriting local changes
+  return;
 }
 
 // ── HELPERS ──────────────────────────────────────────────
@@ -1308,6 +1289,7 @@ async function init() {
     myLastSave = remote.updatedAt || 0;
     remoteLastSave = myLastSave;
     setSyncUI('ok', 'Sincronizado');
+    console.log('Loaded from Firebase, updatedAt:', myLastSave);
   } else {
     await save();
   }
@@ -1320,14 +1302,8 @@ async function init() {
 }
 
 // ── START ────────────────────────────────────────────────
-console.log("Casa EF v4.4 loaded");
-// Sync when app becomes visible (user opens from background)
-document.addEventListener('visibilitychange', function() {
-  if (!document.hidden) {
-    console.log('App visible - syncing from Firebase');
-    pollRemote();
-  }
-});
+console.log("Casa EF v4.5 loaded");
+// No background sync - saves go directly to Firebase
 init();
 </script>
 </body>
