@@ -570,15 +570,12 @@ function openAddMonth(){
       var m=parseInt(document.getElementById('nmM').value);
       var y=parseInt(document.getElementById('nmY').value);
       if(S.data.find(function(d){return d.y===y&&d.m===m;})){toast('Ese mes ya existe');return;}
-      // Base cats always present in every month
-      var baseCats=['agua','electricidad','gas','internet','aguaCasa','luzCasa'];
+      var baseCats=['aguaCasa','luzCasa'];
       var newCats={};
-      // First copy from last month
+      // Copy from last month (no duplicates since it's an object)
       Object.keys(last.cats).forEach(function(k){newCats[k]=window._copyMode?(last.cats[k]||0):0;});
-      // Always include base cats even if not in last month
-      baseCats.forEach(function(k){
-        if(!(k in newCats)) newCats[k]=0;
-      });
+      // Ensure base cats exist
+      baseCats.forEach(function(k){if(!(k in newCats))newCats[k]=0;});
       S.data.push({y:y,m:m,cats:newCats});
       S.data.sort(function(a,b){return a.y!==b.y?a.y-b.y:a.m-b.m;});
       ci=S.data.findIndex(function(d){return d.y===y&&d.m===m;});
@@ -654,10 +651,19 @@ function render(){
 }
 
 function renderD(d){
-  // Always include base cats
-  var baseCats=['agua','electricidad','gas','internet','aguaCasa','luzCasa'];
-  baseCats.forEach(function(k){if(!(k in d.cats))d.cats[k]=0;});
-  var es=Object.entries(d.cats).sort(function(a,b){
+  var catsWithBase=Object.assign({},d.cats);
+  // From May 2026 onwards: always show these base cats
+  if(d.y>2026||(d.y===2026&&d.m>=5)){
+    ['aguaCasa','luzCasa','gas','internet'].forEach(function(k){
+      if(!(k in catsWithBase))catsWithBase[k]=0;
+    });
+  } else if(d.y===2026&&d.m>=1){
+    // Jan-Apr 2026: only casa propia cats
+    ['aguaCasa','luzCasa'].forEach(function(k){
+      if(!(k in catsWithBase))catsWithBase[k]=0;
+    });
+  }
+  var es=Object.entries(catsWithBase).sort(function(a,b){
     if(a[1]===0&&b[1]===0)return 0;if(a[1]===0)return 1;if(b[1]===0)return -1;return b[1]-a[1];
   });
   cuentasForMonth(d).forEach(function(c){es.push(['__'+c.id,c.monto]);});
@@ -757,11 +763,18 @@ function editG(k,isC){
 }
 function deleteCatFromMonth(k){
   var d=S.data[ci];var lbl=S.cats[k]?S.cats[k].label:k;
-  if(!confirm('¿Eliminar "'+lbl+'" de '+MF[d.m-1]+' '+d.y+'?'))return;
-  delete d.cats[k];
+  var baseCats=['aguaCasa','luzCasa'];
+  var isBase=baseCats.indexOf(k)!==-1;
+  if(isBase){
+    if(!confirm('\u00bfPoner "'+lbl+'" en $0 este mes?'))return;
+    d.cats[k]=0;
+  } else {
+    if(!confirm('\u00bfEliminar "'+lbl+'" de '+MF[d.m-1]+' '+d.y+'?'))return;
+    delete d.cats[k];
+  }
   var mk2=mk(d);delete S.paid[mk2+'_'+k+'_paid'];delete S.comments[mk2+'_'+k];
-  addHist(S.whoAmI||'Erick','eliminó gasto',lbl+' de '+MF[d.m-1]);
-  closeM();save();toast(lbl+' eliminado del mes');render();
+  addHist(S.whoAmI||'Erick',isBase?'puso en $0':'elimin\u00f3 gasto',lbl+' de '+MF[d.m-1]);
+  closeM();save();toast(isBase?lbl+' puesto en $0':lbl+' eliminado');render();
 }
 function addVar(){
   var n=document.getElementById('vN').value.trim(),m=parseFloat(document.getElementById('vM').value)||0;
