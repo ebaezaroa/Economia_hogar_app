@@ -519,10 +519,18 @@ async function init() {
 // ── HELPERS ───────────────────────────────────────────────
 function fmt(n){return '$'+Math.round(n).toLocaleString('es-CL');}
 function mk(d){return d.y+'-'+d.m;}
+function cuentasForMonth(d){
+  return S.cuentas.filter(function(c){
+    if(!c.fromY) return true; // legacy: apply to all
+    if(d.y > c.fromY) return true;
+    if(d.y === c.fromY && d.m >= c.fromM) return true;
+    return false;
+  });
+}
 function tot(d){
   var t=Object.values(d.cats).reduce(function(a,v){return a+(v||0);},0);
   (S.vars[mk(d)]||[]).forEach(function(v){t+=v.monto;});
-  S.cuentas.forEach(function(c){t+=c.monto;});
+  cuentasForMonth(d).forEach(function(c){t+=c.monto;});
   return t;
 }
 function toast(msg){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('on');setTimeout(function(){t.classList.remove('on');},2200);}
@@ -641,7 +649,7 @@ function renderD(d){
   var es=Object.entries(d.cats).sort(function(a,b){
     if(a[1]===0&&b[1]===0)return 0;if(a[1]===0)return 1;if(b[1]===0)return -1;return b[1]-a[1];
   });
-  S.cuentas.forEach(function(c){es.push(['__'+c.id,c.monto]);});
+  cuentasForMonth(d).forEach(function(c){es.push(['__'+c.id,c.monto]);});
   var mx=Math.max.apply(null,es.map(function(e){return e[1];}));mx=mx||1;
   var catCnKeys=['electricidad','agua','gas','internet','luzCasa','aguaCasa','internetCasa','dividendo','arriendo','cocina'];
   var html='';
@@ -771,7 +779,8 @@ function addCuenta(){
   var n=document.getElementById('ncN').value.trim(),m=parseFloat(document.getElementById('ncM').value)||0;
   var c=document.getElementById('ncC').value,col=document.getElementById('ncCol').value;
   if(!n||!m){toast('Completa nombre y monto');return;}
-  S.cuentas.push({id:Date.now().toString(),label:n,monto:m,cuenta:c,color:col});
+  var d=S.data[ci];
+  S.cuentas.push({id:Date.now().toString(),label:n,monto:m,cuenta:c,color:col,fromY:d.y,fromM:d.m});
   document.getElementById('ncN').value='';document.getElementById('ncM').value='';
   document.getElementById('fCuenta').classList.remove('on');save();toast('Cuenta agregada ✓');render();
 }
@@ -806,7 +815,7 @@ function renderComp(d,prev){
 
 function renderPie(d){
   var es=Object.entries(d.cats).filter(function(e){return e[1]>0;});
-  S.cuentas.forEach(function(c){es.push(['__'+c.id,c.monto]);});
+  cuentasForMonth(d).forEach(function(c){es.push(['__'+c.id,c.monto]);});
   (S.vars[mk(d)]||[]).forEach(function(v){es.push(['_v_'+v.id,v.monto]);});
   es.sort(function(a,b){return b[1]-a[1];});
   var t=es.reduce(function(a,e){return a+e[1];},0)||1;
@@ -824,7 +833,11 @@ function renderSplit(d){
   var paidCount=allCats.filter(function(e){return S.paid&&S.paid[mk(d)+'_'+e[0]+'_paid'];}).length;
   var total=allCats.length;var pct=total?Math.round(paidCount/total*100):0;
   document.getElementById('paidSummary').innerHTML='<div style="padding:12px 13px;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;"><span style="font-size:12px;color:var(--text2);">'+paidCount+' de '+total+' gastos confirmados</span><span style="font-size:12px;font-weight:600;color:'+(pct===100?'var(--green)':'var(--text)')+'">'+pct+'%</span></div><div style="height:6px;background:var(--bg3);border-radius:3px;overflow:hidden;"><div style="height:100%;width:'+pct+'%;background:'+(pct===100?'var(--green)':'var(--accent)')+';border-radius:3px;transition:width .4s;"></div></div>'+(pct===100?'<div style="font-size:11px;color:var(--green);margin-top:8px;text-align:center;">✅ Todos confirmados</div>':'')+'</div>';
-  var html='';S.cuentas.forEach(function(c){html+='<div class="crow"><div class="cdot" style="background:'+c.color+'"></div><div class="cinfo"><div class="cname">'+c.label+'</div><div class="cnote">'+c.cuenta+'</div></div><div class="camt">'+fmt(c.monto)+'</div><div class="acts"><button class="xbtn" onclick="editC(\''+c.id+'\')">editar</button><button class="xbtn red" onclick="delC(\''+c.id+'\')">✕</button></div></div>';});
+  var html='';S.cuentas.forEach(function(c){
+    var fromLabel=c.fromY?(' · desde '+MF[c.fromM-1]+' '+c.fromY):'';
+    var active=!c.fromY||(d.y>c.fromY||(d.y===c.fromY&&d.m>=c.fromM));
+    html+='<div class="crow" style="opacity:'+(active?1:0.45)+'"><div class="cdot" style="background:'+c.color+'"></div><div class="cinfo"><div class="cname">'+c.label+'</div><div class="cnote">'+c.cuenta+fromLabel+'</div></div><div class="camt">'+(active?fmt(c.monto):'—')+'</div><div class="acts"><button class="xbtn" onclick="editC(\''+c.id+'\')">editar</button><button class="xbtn red" onclick="delC(\''+c.id+'\')">✕</button></div></div>';
+  });
   document.getElementById('cuentasList').innerHTML=html||'<div class="empty">Sin cuentas adicionales</div>';
 }
 
@@ -848,7 +861,7 @@ function renderHist(){
 function buildTxt(d,t){
   var mn=MF[d.m-1]+' '+d.y;var lines=['🏠 Casa Erick & Fran','📅 '+mn,'─'.repeat(26),'Gastos:'];
   Object.entries(d.cats).filter(function(e){return e[1]>0;}).sort(function(a,b){return b[1]-a[1];}).forEach(function(e){var lbl=S.cats[e[0]]?S.cats[e[0]].label:e[0];lines.push('  '+lbl+': '+fmt(e[1]));});
-  S.cuentas.forEach(function(c){lines.push('  '+c.label+': '+fmt(c.monto));});
+  cuentasForMonth(d).forEach(function(c){lines.push('  '+c.label+': '+fmt(c.monto));});
   var vrs=S.vars[mk(d)]||[];if(vrs.length){lines.push('Variables:');vrs.forEach(function(v){lines.push('  '+v.label+': '+fmt(v.monto)+(v.nota?' ('+v.nota+')':''));});}
   lines.push('─'.repeat(26),'💰 Total: '+fmt(t),'→ Erick: '+fmt(t/2),'→ Fran:  '+fmt(t/2));
   return lines.join('\n');
