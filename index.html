@@ -389,6 +389,7 @@ const DEFAULT_CLIENT_NUMS = {
   electricidad: '2734332',
   luzCasa: '000008050222',
   aguaCasa: '455924',
+  internetCasa: '',
 };
 
 let S = {
@@ -569,8 +570,15 @@ function openAddMonth(){
       var m=parseInt(document.getElementById('nmM').value);
       var y=parseInt(document.getElementById('nmY').value);
       if(S.data.find(function(d){return d.y===y&&d.m===m;})){toast('Ese mes ya existe');return;}
+      // Base cats always present in every month
+      var baseCats=['agua','electricidad','gas','internet','aguaCasa','luzCasa'];
       var newCats={};
+      // First copy from last month
       Object.keys(last.cats).forEach(function(k){newCats[k]=window._copyMode?(last.cats[k]||0):0;});
+      // Always include base cats even if not in last month
+      baseCats.forEach(function(k){
+        if(!(k in newCats)) newCats[k]=0;
+      });
       S.data.push({y:y,m:m,cats:newCats});
       S.data.sort(function(a,b){return a.y!==b.y?a.y-b.y:a.m-b.m;});
       ci=S.data.findIndex(function(d){return d.y===y&&d.m===m;});
@@ -646,6 +654,9 @@ function render(){
 }
 
 function renderD(d){
+  // Always include base cats
+  var baseCats=['agua','electricidad','gas','internet','aguaCasa','luzCasa'];
+  baseCats.forEach(function(k){if(!(k in d.cats))d.cats[k]=0;});
   var es=Object.entries(d.cats).sort(function(a,b){
     if(a[1]===0&&b[1]===0)return 0;if(a[1]===0)return 1;if(b[1]===0)return -1;return b[1]-a[1];
   });
