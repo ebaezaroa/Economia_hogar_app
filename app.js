@@ -266,8 +266,16 @@ async function save() {
 function findCurrentMonth() {
   var now = new Date();
   var y = now.getFullYear(), m = now.getMonth() + 1;
+  // Buscar mes exacto
   var idx = S.data.findIndex(function(d){ return d.y === y && d.m === m; });
-  return idx >= 0 ? idx : Math.max(0, S.data.length - 1);
+  if (idx >= 0) return idx;
+  // No existe — ir al último mes que no supere el mes actual
+  var best = -1;
+  for (var i = 0; i < S.data.length; i++) {
+    var d = S.data[i];
+    if (d.y < y || (d.y === y && d.m <= m)) best = i;
+  }
+  return best >= 0 ? best : Math.max(0, S.data.length - 1);
 }
 
 // ── INIT — carga y merge de datos ──────────────────────
@@ -293,8 +301,8 @@ async function init() {
     if (ld) localData = JSON.parse(ld);
   } catch(e) {}
 
-  if (localData && localData.data) {
-    S.data = localData.data || S.data;
+  if (localData && localData.data && localData.data.length > 0) {
+    S.data = localData.data;
     S.dataTs = localData.dataTs || {};
     S.cats = localData.cats || S.cats;
     S.cuentas = localData.cuentas || [];
@@ -305,67 +313,95 @@ async function init() {
     S.history = localData.history || [];
     S.remDay = localData.remDay || 25;
     S.lightMode = localData.lightMode || false;
+
+    // 3a. Hay datos locales → mostrar de inmediato
+    ci = findCurrentMonth();
+    var mc = document.getElementById('mCount');
+    if (mc) mc.textContent = S.data.length;
+    document.getElementById('loadingScreen').classList.add('hide');
+    applyTheme(); checkRem(); render();
+    setSyncUI('spin', 'Sincronizando...');
+  } else {
+    // 3b. Sin datos locales → esperar Firebase antes de mostrar
+    setSyncUI('spin', 'Cargando...');
+    try {
+      var remote = await fbGet('/casaEF');
+      if (remote && remote.data && remote.data.length > 0) {
+        applyWinner(remote);
+        try {
+          localStorage.setItem('casaEF_v5', JSON.stringify(remote));
+          localStorage.setItem('casaEF_v5_ts', String(remote.updatedAt || Date.now()));
+        } catch(e) {}
+      }
+    } catch(e) {}
+    ci = findCurrentMonth();
+    var mc = document.getElementById('mCount');
+    if (mc) mc.textContent = S.data.length;
+    document.getElementById('loadingScreen').classList.add('hide');
+    applyTheme(); checkRem(); render();
+    setSyncUI('ok', 'Sincronizado');
+    return;
   }
 
-  // 3. Mostrar la app de inmediato
-  ci = findCurrentMonth();
+  // 4. Sync Firebase en background (solo cuando había datos locales)
+  setTimeout(async function() { await syncFirebase(localData); }, 0);
+}
+
+function applyWinner(winner) {
+  S.data = winner.data || S.data;
+  S.dataTs = winner.dataTs || {};
+  S.cats = winner.cats || S.cats;
+  S.cuentas = winner.cuentas || [];
+  S.vars = winner.vars || {};
+  S.paid = winner.paid || {};
+  S.comments = winner.comments || {};
+  S.clientNums = winner.clientNums || Object.assign({}, DEFAULT_CLIENT_NUMS);
+  S.history = winner.history || [];
+  S.remDay = winner.remDay || 25;
+  S.lightMode = winner.lightMode || false;
+}
+
+async function syncFirebase(localData) {
   var mc = document.getElementById('mCount');
   if (mc) mc.textContent = S.data.length;
   document.getElementById('loadingScreen').classList.add('hide');
   applyTheme(); checkRem(); render();
   setSyncUI('spin', 'Sincronizando...');
 
-  // 4. Sincronizar con Firebase en background (sin bloquear UI)
-  setTimeout(async function() {
-    try {
-      var remote = await fbGet('/casaEF');
-      if (!remote) {
-        // Sin datos remotos — subir lo local
-        if (localData && localData.data && localData.data.length > 0) {
-          fbSet('/casaEF', localData);
-        } else {
-          save();
-        }
-        setSyncUI('ok', 'Local');
-        return;
-      }
+}
 
-      var winner = null;
-      if (localData && localData.data && remote.data) {
-        winner = mergeStates(localData, remote);
-        if (JSON.stringify(winner) !== JSON.stringify(remote)) {
-          fbSet('/casaEF', winner);
-        }
-      } else if (remote && remote.data && remote.data.length > 0) {
-        winner = remote;
-        try {
-          localStorage.setItem('casaEF_v5', JSON.stringify(remote));
-          localStorage.setItem('casaEF_v5_ts', String(remote.updatedAt || Date.now()));
-        } catch(e) {}
-      }
-
-      if (winner) {
-        S.data = winner.data || S.data;
-        S.dataTs = winner.dataTs || {};
-        S.cats = winner.cats || S.cats;
-        S.cuentas = winner.cuentas || [];
-        S.vars = winner.vars || {};
-        S.paid = winner.paid || {};
-        S.comments = winner.comments || {};
-        S.clientNums = winner.clientNums || Object.assign({}, DEFAULT_CLIENT_NUMS);
-        S.history = winner.history || [];
-        S.remDay = winner.remDay || 25;
-        S.lightMode = winner.lightMode || false;
-        ci = findCurrentMonth();
-        var mc2 = document.getElementById('mCount');
-        if (mc2) mc2.textContent = S.data.length;
-        applyTheme(); checkRem(); render();
-      }
-      setSyncUI('ok', 'Sincronizado');
-    } catch(e) {
-      setSyncUI('err', 'Sin conexión');
+async function syncFirebase(localData) {
+  try {
+    var remote = await fbGet('/casaEF');
+    if (!remote) {
+      fbSet('/casaEF', localData);
+      setSyncUI('ok', 'Local');
+      return;
     }
-  }, 0);
+
+    var winner = null;
+    if (localData && localData.data && remote.data) {
+      winner = mergeStates(localData, remote);
+      if (JSON.stringify(winner) !== JSON.stringify(remote)) fbSet('/casaEF', winner);
+    } else if (remote && remote.data && remote.data.length > 0) {
+      winner = remote;
+      try {
+        localStorage.setItem('casaEF_v5', JSON.stringify(remote));
+        localStorage.setItem('casaEF_v5_ts', String(remote.updatedAt || Date.now()));
+      } catch(e) {}
+    }
+
+    if (winner) {
+      applyWinner(winner);
+      ci = findCurrentMonth();
+      var mc2 = document.getElementById('mCount');
+      if (mc2) mc2.textContent = S.data.length;
+      applyTheme(); checkRem(); render();
+    }
+    setSyncUI('ok', 'Sincronizado');
+  } catch(e) {
+    setSyncUI('err', 'Sin conexión');
+  }
 }
 
 // ── HELPERS ───────────────────────────────────────────────
