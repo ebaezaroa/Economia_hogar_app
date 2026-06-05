@@ -17,6 +17,20 @@
   <div style="font-size:14px;color:var(--text2);">Cargando...</div>
 </div>
 
+<div class="login-screen" id="loginScreen">
+  <div class="login-box">
+    <div style="font-size:52px;margin-bottom:12px;">🏠</div>
+    <div style="font-size:20px;font-weight:700;margin-bottom:4px;">Casa Erick &amp; Fran</div>
+    <div style="font-size:13px;color:var(--text2);margin-bottom:32px;">Ingresa tu correo para continuar</div>
+    <div style="width:100%;margin-bottom:12px;">
+      <div class="flabel" style="margin-bottom:5px;">Correo electrónico</div>
+      <input id="loginEmail" type="email" placeholder="tu@correo.com" autocomplete="email" inputmode="email" onkeydown="if(event.key==='Enter')doLogin()"/>
+    </div>
+    <div id="loginError" style="font-size:11px;color:var(--red);margin-bottom:10px;min-height:16px;text-align:center;"></div>
+    <button class="btn btn-p" style="width:100%;" onclick="doLogin()">Entrar</button>
+  </div>
+</div>
+
 <div class="hdr">
   <div class="hdr-inner">
     <div>
@@ -141,6 +155,16 @@
       <div><div style="font-size:13px;font-weight:500;">Modo claro</div><div style="font-size:11px;color:var(--text2);margin-top:2px;">Cambiar entre oscuro y claro</div></div>
       <div id="themeTrack" class="toggle-track" onclick="toggleTheme()"><div class="toggle-knob"></div></div>
     </div>
+  </div>
+  <div class="slabel">Sesión activa</div>
+  <div class="card" style="padding:13px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+      <div>
+        <div style="font-size:13px;font-weight:600;" id="sessionName">—</div>
+        <div style="font-size:11px;color:var(--text2);margin-top:2px;" id="sessionEmail">—</div>
+      </div>
+    </div>
+    <button class="btn btn-s" style="width:100%;" onclick="logOut()">Cambiar de usuario</button>
   </div>
   <div class="slabel">¿Quién usa este dispositivo?</div>
   <div class="card" style="padding:13px;">
