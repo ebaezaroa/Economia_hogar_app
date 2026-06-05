@@ -379,31 +379,39 @@ async function syncFirebase(localData) {
 async function syncFirebase(localData) {
   try {
     var remote = await fbGet('/casaEF');
-    if (!remote) {
+    if (!remote || !remote.data) {
+      // Firebase vacío — subir datos locales
       fbSet('/casaEF', localData);
       setSyncUI('ok', 'Local');
       return;
     }
 
-    var winner = null;
-    if (localData && localData.data && remote.data) {
-      winner = mergeStates(localData, remote);
-      if (JSON.stringify(winner) !== JSON.stringify(remote)) fbSet('/casaEF', winner);
-    } else if (remote && remote.data && remote.data.length > 0) {
+    var localTs = (localData && localData.updatedAt) || 0;
+    var remoteTs = remote.updatedAt || 0;
+    var winner;
+
+    if (remoteTs > localTs) {
+      // Firebase es más nuevo → usar Firebase directamente
       winner = remote;
       try {
         localStorage.setItem('casaEF_v5', JSON.stringify(remote));
-        localStorage.setItem('casaEF_v5_ts', String(remote.updatedAt || Date.now()));
+        localStorage.setItem('casaEF_v5_ts', String(remoteTs));
       } catch(e) {}
+    } else if (localTs > remoteTs) {
+      // Local es más nuevo → subir a Firebase
+      winner = localData;
+      fbSet('/casaEF', localData);
+    } else {
+      // Misma fecha — merge conservador (preserva ambas entradas en paid/vars)
+      winner = mergeStates(localData, remote);
+      if (JSON.stringify(winner) !== JSON.stringify(remote)) fbSet('/casaEF', winner);
     }
 
-    if (winner) {
-      applyWinner(winner);
-      ci = findCurrentMonth();
-      var mc2 = document.getElementById('mCount');
-      if (mc2) mc2.textContent = S.data.length;
-      applyTheme(); checkRem(); render();
-    }
+    applyWinner(winner);
+    ci = findCurrentMonth();
+    var mc2 = document.getElementById('mCount');
+    if (mc2) mc2.textContent = S.data.length;
+    applyTheme(); checkRem(); render();
     setSyncUI('ok', 'Sincronizado');
   } catch(e) {
     setSyncUI('err', 'Sin conexión');
