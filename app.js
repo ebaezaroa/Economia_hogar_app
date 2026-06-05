@@ -205,9 +205,15 @@ function mergeStates(local, remote) {
   merged.dataTs = Object.assign({}, localTs);
   Object.keys(remoteTs).forEach(function(k){ if((remoteTs[k]||0) > (localTs[k]||0)) merged.dataTs[k] = remoteTs[k]; });
 
-  // paid, comments, vars: unión — nunca se pierde ninguna entrada
-  merged.paid = Object.assign({}, remote.paid || {}, local.paid || {});
-  merged.comments = Object.assign({}, remote.comments || {}, local.comments || {});
+  // paid, comments: si remote es más nuevo → remote gana; si local es más nuevo → local gana
+  var remoteNewer = (remote.updatedAt||0) > (local.updatedAt||0);
+  if (remoteNewer) {
+    merged.paid = Object.assign({}, local.paid || {}, remote.paid || {});
+    merged.comments = Object.assign({}, local.comments || {}, remote.comments || {});
+  } else {
+    merged.paid = Object.assign({}, remote.paid || {}, local.paid || {});
+    merged.comments = Object.assign({}, remote.comments || {}, local.comments || {});
+  }
   var mergedVars = Object.assign({}, remote.vars || {});
   Object.keys(local.vars || {}).forEach(function(mk2) {
     if (!mergedVars[mk2]) { mergedVars[mk2] = local.vars[mk2]; return; }
