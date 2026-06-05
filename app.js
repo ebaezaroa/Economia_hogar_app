@@ -1,3 +1,46 @@
+// ── USUARIOS CONOCIDOS ────────────────────────────────────
+const KNOWN_EMAILS = {
+  'ebaezaroa@gmail.com':     'Erick',
+  'ma.francisca89@gmail.com':'Fran',
+};
+
+function doLogin() {
+  var email = document.getElementById('loginEmail').value.trim().toLowerCase();
+  var errEl = document.getElementById('loginError');
+  var name = KNOWN_EMAILS[email];
+  if (!name) {
+    errEl.textContent = 'Correo no reconocido. Intenta de nuevo.';
+    return;
+  }
+  errEl.textContent = '';
+  try {
+    localStorage.setItem('casaEF_email', email);
+    localStorage.setItem('casaEF_who', name);
+  } catch(e) {}
+  S.whoAmI = name;
+  document.getElementById('loginScreen').classList.remove('on');
+  updateWhoUI();
+  save();
+  toast('Bienvenid@ ' + name + '! 👋');
+}
+
+function showLogin() {
+  document.getElementById('loginScreen').classList.add('on');
+  setTimeout(function() {
+    var el = document.getElementById('loginEmail');
+    if (el) el.focus();
+  }, 100);
+}
+
+function logOut() {
+  try {
+    localStorage.removeItem('casaEF_email');
+    localStorage.removeItem('casaEF_who');
+  } catch(e) {}
+  S.whoAmI = '';
+  showLogin();
+}
+
 firebase.initializeApp({ databaseURL: 'https://casa-ef-default-rtdb.firebaseio.com' });
 const _fbAuth = firebase.auth();
 let _fbToken = null;
@@ -219,6 +262,20 @@ async function save() {
 
 // ── INIT — carga y merge de datos ──────────────────────
 async function init() {
+  // Verificar sesión guardada
+  var savedEmail = null, savedWho = null;
+  try {
+    savedEmail = localStorage.getItem('casaEF_email');
+    savedWho   = localStorage.getItem('casaEF_who');
+  } catch(e) {}
+
+  if (!savedEmail || !KNOWN_EMAILS[savedEmail]) {
+    document.getElementById('loadingScreen').classList.add('hide');
+    showLogin();
+    return;
+  }
+  S.whoAmI = savedWho || KNOWN_EMAILS[savedEmail];
+
   setSyncUI('spin', 'Cargando...');
   var localData = null;
   try {
@@ -665,6 +722,9 @@ function shareExp(){var d=S.data[ci],txt=buildTxt(d,tot(d));if(navigator.share)n
 function dlCSV(){var rows=['Mes,Total,Erick,Fran'];S.data.forEach(function(d){var t=tot(d);rows.push(MF[d.m-1]+' '+d.y+','+t+','+Math.round(t/2)+','+Math.round(t/2));});var b=new Blob([rows.join('\n')],{type:'text/csv'});var u=URL.createObjectURL(b);var a=document.createElement('a');a.href=u;a.download='casa_ef.csv';a.click();URL.revokeObjectURL(u);toast('CSV descargado');}
 
 function renderAj(){
+  var savedEmail='';try{savedEmail=localStorage.getItem('casaEF_email')||'';}catch(e){}
+  var nameEl=document.getElementById('sessionName');var emailEl=document.getElementById('sessionEmail');
+  if(nameEl)nameEl.textContent=S.whoAmI||'—';if(emailEl)emailEl.textContent=savedEmail||'—';
   document.getElementById('remDay').value=S.remDay||25;updateWhoUI();
   var nl='';Object.entries(S.cats).forEach(function(e){nl+='<div class="crow"><div class="cdot" style="background:'+e[1].color+'"></div><div class="cinfo"><div class="cname">'+esc(e[1].label)+'</div></div><div class="acts"><button class="xbtn" onclick="renG(\''+esc(e[0])+'\')">renombrar</button></div></div>';});
   document.getElementById('namesList').innerHTML=nl;
