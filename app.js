@@ -263,6 +263,13 @@ async function save() {
   }
 }
 
+function findCurrentMonth() {
+  var now = new Date();
+  var y = now.getFullYear(), m = now.getMonth() + 1;
+  var idx = S.data.findIndex(function(d){ return d.y === y && d.m === m; });
+  return idx >= 0 ? idx : Math.max(0, S.data.length - 1);
+}
+
 // ── INIT — carga y merge de datos ──────────────────────
 async function init() {
   // 1. Verificar sesión guardada
@@ -301,7 +308,7 @@ async function init() {
   }
 
   // 3. Mostrar la app de inmediato
-  ci = Math.max(0, S.data.length - 1);
+  ci = findCurrentMonth();
   var mc = document.getElementById('mCount');
   if (mc) mc.textContent = S.data.length;
   document.getElementById('loadingScreen').classList.add('hide');
@@ -349,7 +356,7 @@ async function init() {
         S.history = winner.history || [];
         S.remDay = winner.remDay || 25;
         S.lightMode = winner.lightMode || false;
-        ci = Math.max(0, S.data.length - 1);
+        ci = findCurrentMonth();
         var mc2 = document.getElementById('mCount');
         if (mc2) mc2.textContent = S.data.length;
         applyTheme(); checkRem(); render();
