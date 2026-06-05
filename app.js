@@ -19,9 +19,9 @@ function doLogin() {
   } catch(e) {}
   S.whoAmI = name;
   document.getElementById('loginScreen').classList.remove('on');
-  updateWhoUI();
-  save();
+  document.getElementById('loadingScreen').classList.remove('hide');
   toast('Bienvenid@ ' + name + '! 👋');
+  init();
 }
 
 function showLogin() {
