@@ -41,12 +41,16 @@ function logOut() {
   showLogin();
 }
 
-firebase.initializeApp({ databaseURL: 'https://casa-ef-default-rtdb.firebaseio.com' });
-const _fbAuth = firebase.auth();
+let _fbAuth = null;
 let _fbToken = null;
+try {
+  firebase.initializeApp({ databaseURL: 'https://casa-ef-default-rtdb.firebaseio.com' });
+  _fbAuth = firebase.auth();
+} catch(e) { console.warn('Firebase init failed:', e); }
 
 async function _ensureToken() {
   if (_fbToken) return _fbToken;
+  if (!_fbAuth) return null;
   try {
     let user = _fbAuth.currentUser;
     if (!user) {
@@ -54,7 +58,6 @@ async function _ensureToken() {
       user = cred.user;
     }
     _fbToken = await user.getIdToken();
-    // Refresh token before expiry (55 min)
     setTimeout(async () => { _fbToken = null; }, 55 * 60 * 1000);
     return _fbToken;
   } catch(e) { return null; }
@@ -787,5 +790,15 @@ function confirmDeleteAllData(){
   );
 }
 
+// Safety net: si init() falla, ocultar la pantalla de carga igual
+window.addEventListener('error', function() {
+  var ls = document.getElementById('loadingScreen');
+  if (ls) ls.classList.add('hide');
+});
+
 console.log('Casa EF v5.0 loaded');
-init();
+try { init(); } catch(e) {
+  console.error('init failed:', e);
+  var ls = document.getElementById('loadingScreen');
+  if (ls) ls.classList.add('hide');
+}
