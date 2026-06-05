@@ -262,7 +262,7 @@ async function save() {
 
 // ── INIT — carga y merge de datos ──────────────────────
 async function init() {
-  // Verificar sesión guardada
+  // 1. Verificar sesión guardada
   var savedEmail = null, savedWho = null;
   try {
     savedEmail = localStorage.getItem('casaEF_email');
@@ -276,64 +276,86 @@ async function init() {
   }
   S.whoAmI = savedWho || KNOWN_EMAILS[savedEmail];
 
-  setSyncUI('spin', 'Cargando...');
+  // 2. Cargar localStorage inmediatamente (sin esperar Firebase)
   var localData = null;
   try {
     var ld = localStorage.getItem('casaEF_v5');
     if (ld) localData = JSON.parse(ld);
   } catch(e) {}
 
-  var remote = null;
-  try { remote = await fbGet('/casaEF'); } catch(e) {}
-
-  console.log('v5 init - local:', localData?.updatedAt, 'firebase:', remote?.updatedAt);
-
-  var winner = null;
-  if (localData && remote && localData.data && remote.data) {
-    // Ambas fuentes tienen datos — hacer merge
-    winner = mergeStates(localData, remote);
-    setSyncUI('ok', 'Sincronizado');
-    // Si el merge produce algo diferente a lo remoto, subir
-    if (JSON.stringify(winner) !== JSON.stringify(remote)) {
-      fbSet('/casaEF', winner);
-    }
-  } else if (localData && localData.data && localData.data.length > 0) {
-    winner = localData;
-    setSyncUI('ok', 'Local');
-    fbSet('/casaEF', localData);
-  } else if (remote && remote.data && remote.data.length > 0) {
-    winner = remote;
-    setSyncUI('ok', 'Sincronizado');
-    // Update localStorage
-    try {
-      localStorage.setItem('casaEF_v5', JSON.stringify(remote));
-      localStorage.setItem('casaEF_v5_ts', String(remote.updatedAt || Date.now()));
-    } catch(e) {}
+  if (localData && localData.data) {
+    S.data = localData.data || S.data;
+    S.dataTs = localData.dataTs || {};
+    S.cats = localData.cats || S.cats;
+    S.cuentas = localData.cuentas || [];
+    S.vars = localData.vars || {};
+    S.paid = localData.paid || {};
+    S.comments = localData.comments || {};
+    S.clientNums = localData.clientNums || Object.assign({}, DEFAULT_CLIENT_NUMS);
+    S.history = localData.history || [];
+    S.remDay = localData.remDay || 25;
+    S.lightMode = localData.lightMode || false;
   }
 
-  if (winner) {
-    S.data = winner.data || S.data;
-    S.dataTs = winner.dataTs || {};
-    S.cats = winner.cats || S.cats;
-    S.cuentas = winner.cuentas || [];
-    S.vars = winner.vars || {};
-    S.paid = winner.paid || {};
-    S.comments = winner.comments || {};
-    S.clientNums = winner.clientNums || Object.assign({}, DEFAULT_CLIENT_NUMS);
-    S.history = winner.history || [];
-    S.remDay = winner.remDay || 25;
-    S.whoAmI = winner.whoAmI || 'Erick';
-    S.lightMode = winner.lightMode || false;
-  } else {
-    // No saved data — upload defaults to Firebase
-    await save();
-  }
-
-  ci = S.data.length - 1;
+  // 3. Mostrar la app de inmediato
+  ci = Math.max(0, S.data.length - 1);
   var mc = document.getElementById('mCount');
   if (mc) mc.textContent = S.data.length;
   document.getElementById('loadingScreen').classList.add('hide');
   applyTheme(); checkRem(); render();
+  setSyncUI('spin', 'Sincronizando...');
+
+  // 4. Sincronizar con Firebase en background (sin bloquear UI)
+  setTimeout(async function() {
+    try {
+      var remote = await fbGet('/casaEF');
+      if (!remote) {
+        // Sin datos remotos — subir lo local
+        if (localData && localData.data && localData.data.length > 0) {
+          fbSet('/casaEF', localData);
+        } else {
+          save();
+        }
+        setSyncUI('ok', 'Local');
+        return;
+      }
+
+      var winner = null;
+      if (localData && localData.data && remote.data) {
+        winner = mergeStates(localData, remote);
+        if (JSON.stringify(winner) !== JSON.stringify(remote)) {
+          fbSet('/casaEF', winner);
+        }
+      } else if (remote && remote.data && remote.data.length > 0) {
+        winner = remote;
+        try {
+          localStorage.setItem('casaEF_v5', JSON.stringify(remote));
+          localStorage.setItem('casaEF_v5_ts', String(remote.updatedAt || Date.now()));
+        } catch(e) {}
+      }
+
+      if (winner) {
+        S.data = winner.data || S.data;
+        S.dataTs = winner.dataTs || {};
+        S.cats = winner.cats || S.cats;
+        S.cuentas = winner.cuentas || [];
+        S.vars = winner.vars || {};
+        S.paid = winner.paid || {};
+        S.comments = winner.comments || {};
+        S.clientNums = winner.clientNums || Object.assign({}, DEFAULT_CLIENT_NUMS);
+        S.history = winner.history || [];
+        S.remDay = winner.remDay || 25;
+        S.lightMode = winner.lightMode || false;
+        ci = Math.max(0, S.data.length - 1);
+        var mc2 = document.getElementById('mCount');
+        if (mc2) mc2.textContent = S.data.length;
+        applyTheme(); checkRem(); render();
+      }
+      setSyncUI('ok', 'Sincronizado');
+    } catch(e) {
+      setSyncUI('err', 'Sin conexión');
+    }
+  }, 0);
 }
 
 // ── HELPERS ───────────────────────────────────────────────
