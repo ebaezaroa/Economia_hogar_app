@@ -41,44 +41,18 @@ function logOut() {
   showLogin();
 }
 
-let _fbAuth = null;
-let _fbToken = null;
-try {
-  firebase.initializeApp({ databaseURL: 'https://casa-ef-default-rtdb.firebaseio.com' });
-  _fbAuth = firebase.auth();
-} catch(e) { console.warn('Firebase init failed:', e); }
-
-async function _ensureToken() {
-  if (_fbToken) return _fbToken;
-  if (!_fbAuth) return null;
-  try {
-    let user = _fbAuth.currentUser;
-    if (!user) {
-      const cred = await _fbAuth.signInAnonymously();
-      user = cred.user;
-    }
-    _fbToken = await user.getIdToken();
-    setTimeout(async () => { _fbToken = null; }, 55 * 60 * 1000);
-    return _fbToken;
-  } catch(e) { return null; }
-}
-
 const FB = 'https://casa-ef-default-rtdb.firebaseio.com';
 
 async function fbGet(path) {
   try {
-    const token = await _ensureToken();
-    const authQ = token ? '?auth=' + token : '';
-    const r = await fetch(FB + path + '.json' + authQ);
+    const r = await fetch(FB + path + '.json');
     if (!r.ok) return null;
     return await r.json();
   } catch(e) { return null; }
 }
 async function fbSet(path, data) {
   try {
-    const token = await _ensureToken();
-    const authQ = token ? '?auth=' + token : '';
-    const r = await fetch(FB + path + '.json' + authQ, {
+    const r = await fetch(FB + path + '.json', {
       method:'PUT', headers:{'Content-Type':'application/json'},
       body: JSON.stringify(data)
     });
